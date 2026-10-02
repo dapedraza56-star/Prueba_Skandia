@@ -5,7 +5,7 @@ Solución al caso **PortalPagos** de Andina Financiera, una empresa ficticia con
 | Reto | Carpeta | Estado |
 |---|---|---|
 | 1 · Diagnóstico basado en datos | [reto1-diagnostico/](reto1-diagnostico/) | ✅ Análisis, pruebas y post-mortem |
-| 2 · Modernizar el mantenimiento | `reto2-powershell/` | Pendiente |
+| 2 · Modernizar el mantenimiento | [reto2-powershell/](reto2-powershell/) | ✅ Script, 31 pruebas Pester (5.1 y 7) y demo. Falta la evidencia en la VM (Reto 3) |
 | 3 · Observabilidad y auto-remediación en Azure | `reto3-azure/` | Pendiente |
 | 4 · IA para el triage de incidentes | `reto4-triage-ia/` | Pendiente |
 | 5 · Propuesta de 90 días | `reto5-propuesta/` | Pendiente |
