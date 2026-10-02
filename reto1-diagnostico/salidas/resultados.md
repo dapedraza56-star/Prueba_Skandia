@@ -1,8 +1,19 @@
 # Reto 1 - Resultados generados por `analisis.py`
 
-Todas las horas en hora de Colombia (UTC-5). Archivo generado: no editar a mano.
+Todas las horas en hora de Colombia (UTC-5). Archivo generado: no editar a mano. Version visual: `reporte.html`.
+
+| Indicador | Valor | Detalle |
+|---|---|---|
+| Disponibilidad real viernes 18/09 | 94,2 % | 1.626 operaciones fallidas |
+| Disponibilidad real de la semana | 98,5 % | por operacion de usuario |
+| Lo que reporto el NOC | 100 % | su propio sondeo /health: 99,74 % |
+| Caida total | 26 min | 14:38 a 15:04 · degradacion desde 11:30 |
+| Fuga de memoria | 0,50 MB | por pago confirmado · limite ~2.369 pagos entre reinicios |
+| Disco C: lleno (trafico normal) | mar 22/09 14:00 | quedan 10,9 GB · 6,8 GB/dia |
 
 ## 1. Calidad de los datos
+
+Los archivos llegan sin depurar. Estas decisiones de limpieza cambian las conclusiones.
 
 | Tema | Hallazgo y tratamiento |
 |---|---|
@@ -15,91 +26,102 @@ Todas las horas en hora de Colombia (UTC-5). Archivo generado: no editar a mano.
 | Ruido | Sondeo del NOC (`NOC-HealthProbe`, 20101 peticiones) y escaneres (zgrab y rutas como /.env, 1772 peticiones) se excluyen del calculo de usuarios reales. |
 | HTTP.sys | `httperr1.log` tiene 1541 respuestas 503 AppOffline que **no aparecen en el log de IIS**: si solo se mira IIS, la caida es invisible. |
 
-
 ## 2. Linea de tiempo
 
-| hora | fase | que_paso | que_vio_el_usuario | evidencia |
+Hora de Colombia. Cada fila cita el archivo y la linea que la respalda.
+
+| Hora | Fase | Qué pasó | Qué vio el usuario | Evidencia |
 |---|---|---|---|---|
-| Tue 15 22:03:00 | Antecedente | Despliegue PortalPagos v2.3.1: nuevo flujo de confirmacion, cache de sesiones de pago y log en nivel Debug | Nada visible | eventos linea 109 |
-| Wed 16 11:30:02 | Antecedente | Se retira la unidad D:. Los logs pasan a C:, pero el .BAT sigue limpiando D:\logs\iis | Nada visible | eventos linea 150; mantenimiento_diario.bat |
-| Wed 16 22:12:05 | Antecedente | Aparece un balanceador/proxy delante del servidor (nuevo campo X-Forwarded-For; c-ip pasa a 10.20.4.4). No hay registro de ese cambio | Nada visible | u_ex260917.log linea 2351 |
-| Thu 17 16:10:00 | Señal ignorada | Ticket 'Portal de pagos lento en la tarde', cerrado con 'monitoreo en verde' | Lentitud | tickets T-10240 |
-| Fri 18 02:00:01 | Antecedente | iisreset nocturno: memoria de w3wp vuelve a ~300 MB | Nada visible | eventos linea 271 |
-| Fri 18 11:30:00 | Inicio de degradacion | p95 de latencia supera 1,5x la linea base (700 ms) con memoria de w3wp en 1,089 MB | Paginas algo mas lentas | u_ex260918.log; perfmon |
-| Fri 18 12:40:00 | Degradacion fuerte | p95 > 3 s | Lentitud notoria al consultar y pagar | u_ex260918.log |
-| Fri 18 13:23:08 | Primer error | Primer 500 del incidente (/api/pagos/iniciar) | Error al pagar | u_ex260918.log linea 24018 |
-| Fri 18 13:24:19 | Primer error | Primera OutOfMemoryException en SesionPagoCache.Agregar (/api/pagos/confirmar) | 'Ha ocurrido un error inesperado' | eventos linea 304 |
-| Fri 18 13:34:00 | Reporte | Primer ticket de usuarios (T-10252) | Error al confirmar pago | tickets T-10252 |
-| Fri 18 14:00:00 | Deteccion (hipotetica) | Hora de la alerta de ejemplo (5xx > 5%), si hubiera existido | - | alerta_ejemplo.json (firedDateTime 19:00Z) |
-| Fri 18 14:22:12 | Caida | Primer crash de w3wp por OutOfMemory (se genera dump) | Conexiones cortadas | eventos lineas 347-350 |
-| Fri 18 14:34:40 | Caida | Crashes en cadena: 5 entre 14:22 y 14:38 | Errores intermitentes | eventos lineas 347, 352, 356, 360, 364 |
-| Fri 18 14:38:00 | Caida total | HTTP.sys responde 503 AppOffline a todo | Service Unavailable | httperr1.log linea 5 |
-| Fri 18 14:38:05 | Caida total | Rapid-Fail Protection deshabilita PortalPagosPool | Service Unavailable (503) | eventos linea 366 |
-| Fri 18 14:42:00 | Reporte | Ticket critico T-10255 'Portal caido' | - | tickets T-10255 |
-| Fri 18 15:04:00 | Recuperacion | Reinicio manual del pool | - | tickets T-10255 (sin evento) |
-| Fri 18 15:04:00 | Recuperacion | Primera respuesta de IIS despues de la caida | Portal disponible | u_ex260918.log linea 27229 |
-| Fri 18 16:37:17 | Riesgo | Aviso del sistema: disco C: casi lleno | Nada visible (aun) | eventos linea 372 |
-| Sun 20 09:15:00 | Señal ignorada | Revision semanal NOC: 'sin novedades', /health OK 100% | - | tickets T-10270 |
+| mar 15/09 22:03:00 | Antecedente | Despliegue PortalPagos v2.3.1: nuevo flujo de confirmacion, cache de sesiones de pago y log en nivel Debug | Nada visible | eventos linea 109 |
+| mié 16/09 11:30:02 | Antecedente | Se retira la unidad D:. Los logs pasan a C:, pero el .BAT sigue limpiando D:\logs\iis | Nada visible | eventos linea 150; mantenimiento_diario.bat |
+| mié 16/09 22:12:05 | Antecedente | Aparece un balanceador/proxy delante del servidor (nuevo campo X-Forwarded-For; c-ip pasa a 10.20.4.4). No hay registro de ese cambio | Nada visible | u_ex260917.log linea 2351 |
+| jue 17/09 16:10:00 | Señal ignorada | Ticket 'Portal de pagos lento en la tarde', cerrado con 'monitoreo en verde' | Lentitud | tickets T-10240 |
+| vie 18/09 02:00:01 | Antecedente | iisreset nocturno: memoria de w3wp vuelve a ~300 MB | Nada visible | eventos linea 271 |
+| vie 18/09 11:30:00 | Inicio de degradacion | p95 de latencia supera 1,5x la linea base (700 ms) con memoria de w3wp en 1,089 MB | Paginas algo mas lentas | u_ex260918.log; perfmon |
+| vie 18/09 12:40:00 | Degradacion fuerte | p95 > 3 s | Lentitud notoria al consultar y pagar | u_ex260918.log |
+| vie 18/09 13:23:08 | Primer error | Primer 500 del incidente (/api/pagos/iniciar) | Error al pagar | u_ex260918.log linea 24018 |
+| vie 18/09 13:24:19 | Primer error | Primera OutOfMemoryException en SesionPagoCache.Agregar (/api/pagos/confirmar) | 'Ha ocurrido un error inesperado' | eventos linea 304 |
+| vie 18/09 13:34:00 | Reporte | Primer ticket de usuarios (T-10252) | Error al confirmar pago | tickets T-10252 |
+| vie 18/09 14:00:00 | Deteccion (hipotetica) | Hora de la alerta de ejemplo (5xx > 5%), si hubiera existido | - | alerta_ejemplo.json (firedDateTime 19:00Z) |
+| vie 18/09 14:22:12 | Caida | Primer crash de w3wp por OutOfMemory (se genera dump) | Conexiones cortadas | eventos lineas 347-350 |
+| vie 18/09 14:34:40 | Caida | Crashes en cadena: 5 entre 14:22 y 14:38 | Errores intermitentes | eventos lineas 347, 352, 356, 360, 364 |
+| vie 18/09 14:38:00 | Caida total | HTTP.sys responde 503 AppOffline a todo | Service Unavailable | httperr1.log linea 5 |
+| vie 18/09 14:38:05 | Caida total | Rapid-Fail Protection deshabilita PortalPagosPool | Service Unavailable (503) | eventos linea 366 |
+| vie 18/09 14:42:00 | Reporte | Ticket critico T-10255 'Portal caido' | - | tickets T-10255 |
+| vie 18/09 15:04:00 | Recuperacion | Reinicio manual del pool | - | tickets T-10255 (sin evento) |
+| vie 18/09 15:04:00 | Recuperacion | Primera respuesta de IIS despues de la caida | Portal disponible | u_ex260918.log linea 27229 |
+| vie 18/09 16:37:17 | Riesgo | Aviso del sistema: disco C: casi lleno | Nada visible (aun) | eventos linea 372 |
+| dom 20/09 09:15:00 | Señal ignorada | Revision semanal NOC: 'sin novedades', /health OK 100% | - | tickets T-10270 |
 
+![fig1_incidente_18sep](fig1_incidente_18sep.png)
 
-## 3. Disponibilidad (usuarios reales, sin estaticos, sin NOC ni escaneres)
+## 3. Disponibilidad real vs. NOC
 
-| dia | peticiones | fallas | disp_peticiones_pct | min_no_disponible | disp_tiempo_pct | noc_sondeos_fallidos | disp_noc_pct |
+Usuarios reales: sin archivos estaticos, sin el sondeo del NOC y sin escaneres. `disp_tiempo_pct` cuenta ventanas de 5 min con mas de 5 % de errores y al menos 3 fallas.
+
+| Día | Operaciones | Fallas | Disp. por operación (%) | Min. no disponible | Disp. por tiempo (%) | Sondeos NOC fallidos | Disp. según sondeo NOC (%) |
 |---|---|---|---|---|---|---|---|
-| 2026-09-14 | 17579.0 | 30.0 | 99.83 | 0.0 | 100.0 | 0.0 | 100.0 |
-| 2026-09-15 | 16567.0 | 21.0 | 99.87 | 0.0 | 100.0 | 0.0 | 100.0 |
-| 2026-09-16 | 17546.0 | 16.0 | 99.91 | 0.0 | 100.0 | 0.0 | 100.0 |
-| 2026-09-17 | 19455.0 | 26.0 | 99.87 | 0.0 | 100.0 | 0.0 | 100.0 |
-| 2026-09-18 | 28087.0 | 1626.0 | 94.21 | 105.0 | 92.71 | 52.0 | 98.19 |
-| 2026-09-19 | 7809.0 | 5.0 | 99.94 | 0.0 | 100.0 | 0.0 | 100.0 |
-| 2026-09-20 | 4988.0 | 3.0 | 99.94 | 0.0 | 100.0 | 0.0 | 100.0 |
+| lun 14/09 | 17579.0 | 30.0 | 99.83 | 0.0 | 100.0 | 0.0 | 100.0 |
+| mar 15/09 | 16567.0 | 21.0 | 99.87 | 0.0 | 100.0 | 0.0 | 100.0 |
+| mié 16/09 | 17546.0 | 16.0 | 99.91 | 0.0 | 100.0 | 0.0 | 100.0 |
+| jue 17/09 | 19455.0 | 26.0 | 99.87 | 0.0 | 100.0 | 0.0 | 100.0 |
+| vie 18/09 | 28087.0 | 1626.0 | 94.21 | 105.0 | 92.71 | 52.0 | 98.19 |
+| sáb 19/09 | 7809.0 | 5.0 | 99.94 | 0.0 | 100.0 | 0.0 | 100.0 |
+| dom 20/09 | 4988.0 | 3.0 | 99.94 | 0.0 | 100.0 | 0.0 | 100.0 |
 | SEMANA | 112031.0 | 1727.0 | 98.46 | 105.0 | 98.96 | 52.0 | 99.74 |
 
+Mientras los usuarios fallaban (18/09 13:20-14:38): **18.9 %** de errores y p95 de **25.4 s**; el sondeo /health respondio 200 en **156 de 156** intentos (p95 4 ms).
 
-Mientras los usuarios fallaban (18/09 13:20-14:38): 18.9 % de errores y p95 de 25.4 s; el sondeo /health respondio 200 en 156 de 156 intentos (p95 4 ms).
+## 4. Señales tempranas
 
-## 4. Señales tempranas por dia
+Desde el miercoles 16/09 la memoria pico, la latencia nocturna y el consumo de disco se multiplican frente a lunes y martes.
 
-| dia | w3wp_pico_mb | p95_19a23h_ms | errores_500 | disco_libre_fin_dia_gb | peticiones | consumo_disco_mb | consumo_mb_por_1k_pet |
+| Día | Memoria pico w3wp (MB) | Latencia p95 19-23 h (ms) | Errores 500 | Disco libre fin del día (GB) | Operaciones | Consumo disco (MB) | MB de disco por 1.000 operaciones |
 |---|---|---|---|---|---|---|---|
-| 2026-09-14 | 316.7 | 727.0 | 30 | 47.0 | 17579 | nan | nan |
-| 2026-09-15 | 320.3 | 610.0 | 21 | 47.2 | 16567 | -239.0 | -14.4 |
-| 2026-09-16 | 1091.3 | 1929.4 | 16 | 40.5 | 17546 | 6884.0 | 392.3 |
-| 2026-09-17 | 1186.3 | 2051.6 | 26 | 33.0 | 19455 | 7656.0 | 393.5 |
-| 2026-09-18 | 1478.5 | 626.4 | 496 | 15.8 | 26957 | 17624.0 | 653.8 |
-| 2026-09-19 | 995.2 | 1244.0 | 5 | 12.8 | 7809 | 3053.0 | 391.0 |
-| 2026-09-20 | 644.3 | 518.4 | 3 | 10.9 | 4988 | 1953.0 | 391.5 |
+| lun 14/09 | 316.7 | 727.0 | 30 | 47.0 | 17579 | nan | nan |
+| mar 15/09 | 320.3 | 610.0 | 21 | 47.2 | 16567 | -239.0 | -14.4 |
+| mié 16/09 | 1091.3 | 1929.4 | 16 | 40.5 | 17546 | 6884.0 | 392.3 |
+| jue 17/09 | 1186.3 | 2051.6 | 26 | 33.0 | 19455 | 7656.0 | 393.5 |
+| vie 18/09 | 1478.5 | 626.4 | 496 | 15.8 | 26957 | 17624.0 | 653.8 |
+| sáb 19/09 | 995.2 | 1244.0 | 5 | 12.8 | 7809 | 3053.0 | 391.0 |
+| dom 20/09 | 644.3 | 518.4 | 3 | 10.9 | 4988 | 1953.0 | 391.5 |
 
+![fig2_semana_memoria_disco](fig2_semana_memoria_disco.png)
 
-## 5. Pronosticos
+## 5. Pronostico: fuga de memoria
 
-**Fuga de memoria (w3wp):** 0.501 MB por cada pago confirmado (R² 0.999), partiendo de 293 MB tras el reinicio. El OutOfMemory aparecio con ~1,478 MB: se alcanza con ~2,369 confirmaciones en un mismo ciclo entre reinicios (observado el 18/09: 2,387 confirmaciones entre las 02:00 y el primer crash).
+**0.501 MB por cada pago confirmado** (R² 0.999), partiendo de 293 MB tras el reinicio. El OutOfMemory aparecio con ~1,478 MB: se alcanza con ~2,369 confirmaciones en un mismo ciclo entre reinicios (observado el 18/09: 2,387 confirmaciones entre las 02:00 y el primer crash).
 
 | ciclo que inicia a las 02:00 del | confirmaciones | % del limite |
 |---|---|---|
-| 2026-09-13 | 21 | 1.0 |
-| 2026-09-14 | 1598 | 67.0 |
-| 2026-09-15 | 1543 | 65.0 |
-| 2026-09-16 | 1601 | 68.0 |
-| 2026-09-17 | 1837 | 78.0 |
-| 2026-09-18 | 4003 | 169.0 |
-| 2026-09-19 | 720 | 30.0 |
-| 2026-09-20 | 407 | 17.0 |
+| dom 13/09 | 21 | 1.0 |
+| lun 14/09 | 1598 | 67.0 |
+| mar 15/09 | 1543 | 65.0 |
+| mié 16/09 | 1601 | 68.0 |
+| jue 17/09 | 1837 | 78.0 |
+| vie 18/09 | 4003 | 169.0 |
+| sáb 19/09 | 720 | 30.0 |
+| dom 20/09 | 407 | 17.0 |
 
+![fig3_fuga_memoria](fig3_fuga_memoria.png)
 
-**Disco C:** consumo = 1 MB/h + 0.389 MB por peticion (R² 1.00). Los dumps del 18/09 ocuparon ~7,002 MB. Libre al cierre: 10.9 GB de 119 GB.
+## 6. Pronostico: disco C:
 
-| escenario de trafico | GB/dia | libre < 5 % | disco lleno |
-|---|---|---|---|
-| bajo (como fin de semana) | 2.4 | Wed 23/09 02:00 | Fri 25/09 12:00 |
-| normal (promedio lun-jue) | 6.8 | Mon 21/09 15:00 | Tue 22/09 14:00 |
-| alto (como el viernes 18/09) | 10.3 | Mon 21/09 12:00 | Tue 22/09 07:00 |
+Consumo = 1 MB/h + **0.389 MB por peticion** (R² 1.00). Los dumps del 18/09 ocuparon ~7,002 MB. Libre al cierre: 10.9 GB de 119 GB.
 
 Cada crash adicional de w3wp deja un dump de ~1,4 GB en C:\CrashDumps y adelanta el llenado.
 
-## 6. Eventos de Windows por dia (para separar ruido de señal)
+| escenario de trafico | GB/dia | libre < 5 % | disco lleno |
+|---|---|---|---|
+| bajo (como fin de semana) | 2.4 | mié 23/09 02:00 | vie 25/09 12:00 |
+| normal (promedio lun-jue) | 6.8 | lun 21/09 15:00 | mar 22/09 14:00 |
+| alto (como el viernes 18/09) | 10.3 | lun 21/09 12:00 | mar 22/09 07:00 |
 
-| evento | 14/09 | 15/09 | 16/09 | 17/09 | 18/09 | 19/09 | 20/09 |
+## 7. Eventos de Windows por dia
+
+Separa ruido de señal: DCOM 10016 aparece igual toda la semana; los eventos criticos solo el 18/09.
+
+| Evento | 14/09 | 15/09 | 16/09 | 17/09 | 18/09 | 19/09 | 20/09 |
 |---|---|---|---|---|---|---|---|
 | .NET crash w3wp | 0 | 0 | 0 | 0 | 5 | 0 | 0 |
 | ASP.NET excepcion no manejada | 0 | 0 | 0 | 0 | 40 | 0 | 0 |

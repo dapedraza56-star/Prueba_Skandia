@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Reto 1: analisis.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/reto1-diagnostico/src/analisis.py",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONIOENCODING": "utf-8" },
+      "console": "integratedTerminal"
+    }
+  ]
+}

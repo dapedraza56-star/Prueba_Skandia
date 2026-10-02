@@ -17,7 +17,8 @@
 | 2 | "¿Qué entornos debo habilitar para Azure y el resto de la prueba?" | Revisó qué había instalado en el equipo y propuso una lista. Separó lo que debía hacer yo (cuentas, tarjeta, presupuesto) de lo que podía instalar ella | ✍️ |
 | 3 | "Instala lo que puedas" | Instaló PowerShell 7, Azure CLI, Bicep, gh, gitleaks, Pester, módulos Az y el entorno Python | Validé versiones. No le di credenciales: el login de GitHub y el de Azure los hice yo |
 | 4 | "Iniciemos con la parte 1" | Exploró cada fuente, construyó `carga.py` y `analisis.py`, y propuso la causa raíz con evidencia | ✍️ (qué revisaste tú, qué cifras verificaste a mano) |
-| 5 | ✍️ | | |
+| 5 | "Mejora analisis.py para no ver resultados en la terminal; algo más visual" | Generó un reporte HTML autocontenido (sin CDN) con indicadores, tablas ordenables y filtrables, gráficas incrustadas y modo oscuro. La misma estructura alimenta el Markdown, para que las dos versiones no se contradigan | ✍️ |
+| 6 | ✍️ | | |
 
 ## 3. Situaciones en las que la IA se equivocó o propuso algo riesgoso
 

@@ -83,7 +83,7 @@ def primera_fila_xff(iis: pd.DataFrame) -> pd.Series:
 
 
 
-def calidad(d) -> str:
+def calidad(d) -> pd.DataFrame:
     iis, h, pm, ev = d["iis"], d["h"], d["pm"], d["ev"]
     cambio = primera_fila_xff(iis)
     blancos = pm[pm.w3wp_private_bytes.isna()]
@@ -112,7 +112,7 @@ def calidad(d) -> str:
         ("HTTP.sys", f"`httperr1.log` tiene {int((h['sc-status'] == 503).sum())} respuestas 503 AppOffline que "
          "**no aparecen en el log de IIS**: si solo se mira IIS, la caida es invisible."),
     ]
-    return md(pd.DataFrame(filas, columns=["Tema", "Hallazgo y tratamiento"]))
+    return pd.DataFrame(filas, columns=["Tema", "Hallazgo y tratamiento"])
 
 
 # ------------------------------------------------------------------- linea de tiempo
@@ -433,9 +433,153 @@ def grafica_fuga(mem):
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------- reportes
+FASE_TONO = {"Antecedente": "", "Señal ignorada": "alerta", "Inicio de degradacion": "alerta",
+             "Degradacion fuerte": "alerta", "Primer error": "critico", "Reporte": "",
+             "Deteccion (hipotetica)": "ok", "Caida": "critico", "Caida total": "critico",
+             "Recuperacion": "ok", "Riesgo": "alerta"}
+
+
+def _es(numero: str) -> str:
+    """'1,234.5' -> '1.234,5' (formato es-CO para textos)."""
+    return numero.replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+DIAS_ES = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
+
+
+def _fecha(ts, formato="%d/%m %H:%M") -> str:
+    """Fecha con dia de la semana en español (strftime depende del idioma del sistema)."""
+    return f"{DIAS_ES[ts.weekday()]} {ts.strftime(formato)}"
+
+
+ETIQUETAS = {
+    "dia": "Día", "peticiones": "Operaciones", "fallas": "Fallas",
+    "disp_peticiones_pct": "Disp. por operación (%)", "min_no_disponible": "Min. no disponible",
+    "disp_tiempo_pct": "Disp. por tiempo (%)", "noc_sondeos_fallidos": "Sondeos NOC fallidos",
+    "disp_noc_pct": "Disp. según sondeo NOC (%)", "w3wp_pico_mb": "Memoria pico w3wp (MB)",
+    "p95_19a23h_ms": "Latencia p95 19-23 h (ms)", "errores_500": "Errores 500",
+    "disco_libre_fin_dia_gb": "Disco libre fin del día (GB)", "consumo_disco_mb": "Consumo disco (MB)",
+    "consumo_mb_por_1k_pet": "MB de disco por 1.000 operaciones", "hora": "Hora", "fase": "Fase",
+    "que_paso": "Qué pasó", "que_vio_el_usuario": "Qué vio el usuario", "evidencia": "Evidencia",
+    "evento": "Evento",
+}
+
+
+def armar_secciones(d, t, disp, salud, s, mem, disco) -> tuple[list, list]:
+    """Estructura comun para el reporte HTML y el Markdown: (kpis, secciones)."""
+    fmt = lambda ts: "no ocurre en 10 dias" if pd.isna(ts) else _fecha(ts, "%d/%m %H:00")  # noqa: E731
+    esc = disco["escenarios"]
+    normal = esc["normal (promedio lun-jue)"]
+    vie = disp.loc[pd.Timestamp("2026-09-18").date()]
+    sem = disp.loc["SEMANA"]
+
+    kpis = [
+        ("Disponibilidad real viernes 18/09", _es(f"{vie.disp_peticiones_pct:.1f} %"),
+         _es(f"{int(vie.fallas):,} operaciones fallidas"), "critico"),
+        ("Disponibilidad real de la semana", _es(f"{sem.disp_peticiones_pct:.1f} %"),
+         "por operacion de usuario", "alerta"),
+        ("Lo que reporto el NOC", "100 %", _es(f"su propio sondeo /health: {sem.disp_noc_pct:.2f} %"), "neutro"),
+        ("Caida total", "26 min", "14:38 a 15:04 · degradacion desde 11:30", "critico"),
+        ("Fuga de memoria", _es(f"{mem['mb_por_1k'] / 1000:.2f} MB"),
+         _es(f"por pago confirmado · limite ~{mem['pet_hasta_oom']:,.0f} pagos entre reinicios"), "alerta"),
+        ("Disco C: lleno (trafico normal)", fmt(normal["lleno"]),
+         _es(f"quedan {disco['libre0'] / 1024:.1f} GB · {normal['gb_dia']:.1f} GB/dia"), "critico"),
+    ]
+
+    tl = t.assign(hora=t.hora.map(lambda x: _fecha(x, "%d/%m %H:%M:%S"))).rename(columns=ETIQUETAS)
+    dd = disp.reset_index()
+    dd["dia"] = dd["dia"].map(lambda x: x if isinstance(x, str) else _fecha(pd.Timestamp(x), "%d/%m"))
+    dd = dd.round(2).rename(columns=ETIQUETAS)
+    cpc = (mem["confirmaciones_por_ciclo"].rename("confirmaciones")
+           .rename_axis("ciclo que inicia a las 02:00 del").reset_index())
+    cpc["% del limite"] = (100 * cpc.confirmaciones / mem["pet_hasta_oom"]).round(0)
+    cpc.iloc[:, 0] = cpc.iloc[:, 0].map(lambda x: _fecha(pd.Timestamp(x), "%d/%m"))
+    s2 = s.reset_index()
+    s2["dia"] = s2["dia"].map(lambda x: _fecha(pd.Timestamp(x), "%d/%m"))
+    s2 = s2.rename(columns=ETIQUETAS)
+    pron = pd.DataFrame([(k, round(v["gb_dia"], 1), fmt(v["bajo_5pct"]), fmt(v["lleno"])) for k, v in esc.items()],
+                        columns=["escenario de trafico", "GB/dia", "libre < 5 %", "disco lleno"])
+
+    nota_salud = (f"Mientras los usuarios fallaban (18/09 13:20-14:38): **{salud['usuarios_err_pct']:.1f} %** de "
+                  f"errores y p95 de **{salud['usuarios_p95_ms'] / 1000:.1f} s**; el sondeo /health respondio 200 en "
+                  f"**{salud['sondeos_ok']} de {salud['sondeos']}** intentos (p95 {salud['sondeo_p95_ms']:.0f} ms).")
+    texto_mem = (f"**{mem['mb_por_1k'] / 1000:.3f} MB por cada pago confirmado** (R² {mem['r2']:.3f}), partiendo de "
+                 f"{mem['intercepto_mb']:.0f} MB tras el reinicio. El OutOfMemory aparecio con "
+                 f"~{mem['umbral_oom_mb']:,.0f} MB: se alcanza con ~{mem['pet_hasta_oom']:,.0f} confirmaciones en un "
+                 f"mismo ciclo entre reinicios (observado el 18/09: {mem['confirmaciones_hasta_crash']:,} "
+                 "confirmaciones entre las 02:00 y el primer crash).")
+    texto_disco = (f"Consumo = {disco['base_mb_h']:.0f} MB/h + **{disco['mb_por_peticion']:.3f} MB por peticion** "
+                   f"(R² {disco['r2']:.2f}). Los dumps del 18/09 ocuparon ~{disco['dumps_mb']:,.0f} MB. "
+                   f"Libre al cierre: {disco['libre0'] / 1024:.1f} GB de {disco['total_mb'] / 1024:.0f} GB.")
+
+    secciones = [
+        dict(id="calidad", titulo="1. Calidad de los datos",
+             texto=["Los archivos llegan sin depurar. Estas decisiones de limpieza cambian las conclusiones."],
+             tablas=[dict(df=calidad(d))]),
+        dict(id="linea", titulo="2. Linea de tiempo",
+             texto=["Hora de Colombia. Cada fila cita el archivo y la linea que la respalda."],
+             tablas=[dict(df=tl, filtro=True, chips={"Fase": lambda v: FASE_TONO.get(v, "")})],
+             figuras=[SALIDAS / "fig1_incidente_18sep.png"]),
+        dict(id="disp", titulo="3. Disponibilidad real vs. NOC",
+             texto=["Usuarios reales: sin archivos estaticos, sin el sondeo del NOC y sin escaneres. "
+                    "`disp_tiempo_pct` cuenta ventanas de 5 min con mas de 5 % de errores y al menos 3 fallas."],
+             tablas=[dict(df=dd, nota=[nota_salud],
+                          resaltar=lambda f: "total" if f["Día"] == "SEMANA"
+                          else ("critico" if f["Disp. por operación (%)"] < 99 else ""))]),
+        dict(id="senales", titulo="4. Señales tempranas",
+             texto=["Desde el miercoles 16/09 la memoria pico, la latencia nocturna y el consumo de disco "
+                    "se multiplican frente a lunes y martes."],
+             tablas=[dict(df=s2, resaltar=lambda f: "critico" if f["Día"].startswith("vie 18")
+                          else ("alerta" if f["Memoria pico w3wp (MB)"] > 900 else ""))],
+             figuras=[SALIDAS / "fig2_semana_memoria_disco.png"]),
+        dict(id="memoria", titulo="5. Pronostico: fuga de memoria", texto=[texto_mem],
+             tablas=[dict(df=cpc, resaltar=lambda f: "critico" if f["% del limite"] >= 100
+                          else ("alerta" if f["% del limite"] >= 75 else ""))],
+             figuras=[SALIDAS / "fig3_fuga_memoria.png"]),
+        dict(id="disco", titulo="6. Pronostico: disco C:",
+             texto=[texto_disco,
+                    "Cada crash adicional de w3wp deja un dump de ~1,4 GB en C:\\CrashDumps y adelanta el llenado."],
+             tablas=[dict(df=pron, resaltar=lambda f: "critico" if "normal" in f["escenario de trafico"] else "")]),
+        dict(id="eventos", titulo="7. Eventos de Windows por dia",
+             texto=["Separa ruido de señal: DCOM 10016 aparece igual toda la semana; los eventos criticos solo el 18/09."],
+             tablas=[dict(df=eventos_por_dia(d["ev"]).reset_index().rename(columns=ETIQUETAS),
+                          resaltar=lambda f: "critico" if f["Evento"] in
+                          {".NET crash w3wp", "WAS pool deshabilitado", "ASP.NET excepcion no manejada"} else "")]),
+    ]
+    return kpis, secciones
+
+
+def escribir_markdown(kpis, secciones) -> Path:
+    r = ["# Reto 1 - Resultados generados por `analisis.py`\n",
+         "Todas las horas en hora de Colombia (UTC-5). Archivo generado: no editar a mano. "
+         "Version visual: `reporte.html`.\n",
+         md(pd.DataFrame([(lab, v, det) for lab, v, det, _ in kpis], columns=["Indicador", "Valor", "Detalle"])), ""]
+    for s in secciones:
+        r.append(f"## {s['titulo']}\n")
+        r += [p + "\n" for p in s.get("texto", [])]
+        for t in s.get("tablas", []):
+            r += [md(t["df"]), ""] + [p + "\n" for p in t.get("nota", [])]
+        r += [f"![{f.stem}]({f.name})\n" for f in s.get("figuras", [])]
+    destino = SALIDAS / "resultados.md"
+    destino.write_text("\n".join(r), encoding="utf-8")
+    return destino
+
+
 # ---------------------------------------------------------------------------- main
-def main():
+def main(argv=None):
+    import argparse
+    import webbrowser
+
+    from reporte_html import generar
+
+    ap = argparse.ArgumentParser(description="Reto 1: diagnostico del incidente de PortalPagos")
+    ap.add_argument("--no-abrir", action="store_true", help="no abrir el reporte en el navegador")
+    args = ap.parse_args(argv)
+
+    print("Cargando y limpiando datos del kit...")
     d = preparar()
+    print("Analizando y generando graficas...")
     t = linea_tiempo(d)
     disp, salud = disponibilidad(d)
     s = senales(d)
@@ -445,43 +589,21 @@ def main():
     grafica_semana(d, mem, disco)
     grafica_fuga(mem)
 
-    t_md = t.assign(hora=t.hora.dt.strftime("%a %d %H:%M:%S"))
-    dd = disp.copy()
-    dd.index = dd.index.astype(str)
-    esc = disco["escenarios"]
-    fmt = lambda ts: "no ocurre en 10 dias" if pd.isna(ts) else ts.strftime("%a %d/%m %H:00")  # noqa: E731
-    r = [
-        "# Reto 1 - Resultados generados por `analisis.py`\n",
-        "Todas las horas en hora de Colombia (UTC-5). Archivo generado: no editar a mano.\n",
-        "## 1. Calidad de los datos\n", calidad(d), "\n",
-        "## 2. Linea de tiempo\n", md(t_md), "\n",
-        "## 3. Disponibilidad (usuarios reales, sin estaticos, sin NOC ni escaneres)\n",
-        md(dd.reset_index().round(2)), "\n",
-        f"Mientras los usuarios fallaban (18/09 13:20-14:38): {salud['usuarios_err_pct']:.1f} % de errores y "
-        f"p95 de {salud['usuarios_p95_ms']/1000:.1f} s; el sondeo /health respondio 200 en "
-        f"{salud['sondeos_ok']} de {salud['sondeos']} intentos (p95 {salud['sondeo_p95_ms']:.0f} ms).\n",
-        "## 4. Señales tempranas por dia\n", md(s.reset_index()), "\n",
-        "## 5. Pronosticos\n",
-        f"**Fuga de memoria (w3wp):** {mem['mb_por_1k']/1000:.3f} MB por cada pago confirmado "
-        f"(R² {mem['r2']:.3f}), partiendo de {mem['intercepto_mb']:.0f} MB tras el reinicio. El OutOfMemory "
-        f"aparecio con ~{mem['umbral_oom_mb']:,.0f} MB: se alcanza con ~{mem['pet_hasta_oom']:,.0f} "
-        f"confirmaciones en un mismo ciclo entre reinicios (observado el 18/09: "
-        f"{mem['confirmaciones_hasta_crash']:,} confirmaciones entre las 02:00 y el primer crash).\n",
-        md(mem["confirmaciones_por_ciclo"].rename("confirmaciones").rename_axis("ciclo que inicia a las 02:00 del")
-           .reset_index().assign(**{"% del limite": lambda t: (100 * t.confirmaciones / mem["pet_hasta_oom"]).round(0)})),
-        "\n",
-        f"**Disco C:** consumo = {disco['base_mb_h']:.0f} MB/h + {disco['mb_por_peticion']:.3f} MB por peticion "
-        f"(R² {disco['r2']:.2f}). Los dumps del 18/09 ocuparon ~{disco['dumps_mb']:,.0f} MB. "
-        f"Libre al cierre: {disco['libre0']/1024:.1f} GB de {disco['total_mb']/1024:.0f} GB.\n",
-        md(pd.DataFrame([(k, f"{v['gb_dia']:.1f}", fmt(v["bajo_5pct"]), fmt(v["lleno"])) for k, v in esc.items()],
-                        columns=["escenario de trafico", "GB/dia", "libre < 5 %", "disco lleno"])),
-        "\nCada crash adicional de w3wp deja un dump de ~1,4 GB en C:\\CrashDumps y adelanta el llenado.\n",
-        "## 6. Eventos de Windows por dia (para separar ruido de señal)\n",
-        md(eventos_por_dia(d["ev"]).reset_index()),
-    ]
-    (SALIDAS / "resultados.md").write_text("\n".join(r), encoding="utf-8")
-    print("\n".join(r))
+    kpis, secciones = armar_secciones(d, t, disp, salud, s, mem, disco)
+    md_path = escribir_markdown(kpis, secciones)
+    html_path = generar(SALIDAS / "reporte.html", "PortalPagos · Diagnostico del incidente del 18/09/2026",
+                        "Andina Financiera (caso ficticio) · semana del 14 al 20 de septiembre · hora de Colombia",
+                        kpis, secciones)
+
+    print("\nResumen")
+    for etiqueta, valor, detalle, _ in kpis:
+        print(f"  - {etiqueta}: {valor} ({detalle})")
+    print(f"\nReporte visual: {html_path}\nMarkdown:       {md_path}")
+    if not args.no_abrir:
+        webbrowser.open(html_path.as_uri())
 
 
 if __name__ == "__main__":
     main()
+
+

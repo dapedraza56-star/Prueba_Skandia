@@ -3,8 +3,9 @@
 | Entregable | Archivo |
 |---|---|
 | Post-mortem para la Directora (máximo 3 páginas) | [postmortem.md](postmortem.md) |
-| Código reproducible | [src/carga.py](src/carga.py) (lectura y limpieza) y [src/analisis.py](src/analisis.py) (análisis, modelos y gráficas) |
-| Resultados con todas las cifras y su evidencia | [salidas/resultados.md](salidas/resultados.md) |
+| Código reproducible | [src/carga.py](src/carga.py) (lectura y limpieza), [src/analisis.py](src/analisis.py) (análisis, modelos y gráficas) y [src/reporte_html.py](src/reporte_html.py) (reporte visual) |
+| **Reporte visual** (indicadores, tablas ordenables y filtrables, gráficas, modo claro/oscuro; funciona sin internet) | `salidas/reporte.html` |
+| Resultados con todas las cifras y su evidencia (versión para GitHub) | [salidas/resultados.md](salidas/resultados.md) |
 | Tablas | `salidas/linea_tiempo.csv`, `salidas/disponibilidad.csv`, `salidas/senales_tempranas.csv` |
 | Gráficas | `salidas/fig1_incidente_18sep.png`, `salidas/fig2_semana_memoria_disco.png`, `salidas/fig3_fuga_memoria.png` |
 | Pruebas | [tests/test_carga.py](tests/test_carga.py) |
@@ -29,7 +30,7 @@ python -m venv .venv
 .venv/Scripts/python -m pytest reto1-diagnostico/tests -q
 ```
 
-El análisis tarda unos 15 segundos y regenera todo `salidas/`. En Linux o macOS usa `.venv/bin/python`.
+El análisis tarda unos 15 segundos, regenera todo `salidas/`, muestra un resumen corto en la terminal y abre `salidas/reporte.html` en el navegador. Si no quieres que abra el navegador (por ejemplo, en CI), usa `--no-abrir`. En Linux o macOS usa `.venv/bin/python`.
 
 ## Método
 
