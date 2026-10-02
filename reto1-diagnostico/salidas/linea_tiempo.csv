@@ -1,0 +1,21 @@
+hora,fase,que_paso,que_vio_el_usuario,evidencia
+2026-09-15 22:03:00,Antecedente,"Despliegue PortalPagos v2.3.1: nuevo flujo de confirmacion, cache de sesiones de pago y log en nivel Debug",Nada visible,eventos linea 109
+2026-09-16 11:30:02,Antecedente,"Se retira la unidad D:. Los logs pasan a C:, pero el .BAT sigue limpiando D:\logs\iis",Nada visible,eventos linea 150; mantenimiento_diario.bat
+2026-09-16 22:12:05,Antecedente,Aparece un balanceador/proxy delante del servidor (nuevo campo X-Forwarded-For; c-ip pasa a 10.20.4.4). No hay registro de ese cambio,Nada visible,u_ex260917.log linea 2351
+2026-09-17 16:10:00,Señal ignorada,"Ticket 'Portal de pagos lento en la tarde', cerrado con 'monitoreo en verde'",Lentitud,tickets T-10240
+2026-09-18 02:00:01,Antecedente,iisreset nocturno: memoria de w3wp vuelve a ~300 MB,Nada visible,eventos linea 271
+2026-09-18 11:30:00,Inicio de degradacion,"p95 de latencia supera 1,5x la linea base (700 ms) con memoria de w3wp en 1,089 MB",Paginas algo mas lentas,u_ex260918.log; perfmon
+2026-09-18 12:40:00,Degradacion fuerte,p95 > 3 s,Lentitud notoria al consultar y pagar,u_ex260918.log
+2026-09-18 13:23:08,Primer error,Primer 500 del incidente (/api/pagos/iniciar),Error al pagar,u_ex260918.log linea 24018
+2026-09-18 13:24:19,Primer error,Primera OutOfMemoryException en SesionPagoCache.Agregar (/api/pagos/confirmar),'Ha ocurrido un error inesperado',eventos linea 304
+2026-09-18 13:34:00,Reporte,Primer ticket de usuarios (T-10252),Error al confirmar pago,tickets T-10252
+2026-09-18 14:00:00,Deteccion (hipotetica),"Hora de la alerta de ejemplo (5xx > 5%), si hubiera existido",-,alerta_ejemplo.json (firedDateTime 19:00Z)
+2026-09-18 14:22:12,Caida,Primer crash de w3wp por OutOfMemory (se genera dump),Conexiones cortadas,eventos lineas 347-350
+2026-09-18 14:34:40,Caida,Crashes en cadena: 5 entre 14:22 y 14:38,Errores intermitentes,"eventos lineas 347, 352, 356, 360, 364"
+2026-09-18 14:38:00,Caida total,HTTP.sys responde 503 AppOffline a todo,Service Unavailable,httperr1.log linea 5
+2026-09-18 14:38:05,Caida total,Rapid-Fail Protection deshabilita PortalPagosPool,Service Unavailable (503),eventos linea 366
+2026-09-18 14:42:00,Reporte,Ticket critico T-10255 'Portal caido',-,tickets T-10255
+2026-09-18 15:04:00,Recuperacion,Reinicio manual del pool,-,tickets T-10255 (sin evento)
+2026-09-18 15:04:00,Recuperacion,Primera respuesta de IIS despues de la caida,Portal disponible,u_ex260918.log linea 27229
+2026-09-18 16:37:17,Riesgo,Aviso del sistema: disco C: casi lleno,Nada visible (aun),eventos linea 372
+2026-09-20 09:15:00,Señal ignorada,"Revision semanal NOC: 'sin novedades', /health OK 100%",-,tickets T-10270
