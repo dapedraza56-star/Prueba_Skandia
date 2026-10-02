@@ -1,0 +1,35 @@
+{
+  "schemaId": "azureMonitorCommonAlertSchema",
+  "data": {
+    "essentials": {
+      "alertId": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.AlertsManagement/alerts/7f1c2b3a-0000-0000-0000-000000000004",
+      "alertRule": "WEB-PAGOS-01-warnings-sistema",
+      "severity": "Sev3",
+      "signalType": "Log",
+      "monitorCondition": "Fired",
+      "monitoringService": "Log Alerts V2",
+      "alertTargetIDs": [
+        "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/rg-portal/providers/microsoft.compute/virtualmachines/web-pagos-01"
+      ],
+      "firedDateTime": "2026-09-16T08:00:00.000Z",
+      "description": "Mas de 3 eventos Warning del log System en 30 minutos",
+      "essentialsVersion": "1.0",
+      "alertContextVersion": "1.0"
+    },
+    "alertContext": {
+      "conditionType": "LogQueryCriteria",
+      "condition": {
+        "windowSize": "PT5M",
+        "allOf": [
+          {
+            "searchQuery": "Event | where EventLog == 'System' and EventLevelName == 'Warning' | summarize count() by bin(TimeGenerated,30m)",
+            "metricMeasureColumn": "pct",
+            "operator": "GreaterThan",
+            "threshold": "3",
+            "metricValue": 4
+          }
+        ]
+      }
+    }
+  }
+}

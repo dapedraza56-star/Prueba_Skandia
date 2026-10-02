@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/andina/triage-incidente/1.0",
+  "title": "Resumen de triage de incidente",
+  "description": "Salida del modelo de lenguaje. Toda afirmacion causal debe citar elementos del contexto por su id.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version_esquema", "que_esta_pasando", "impacto", "hipotesis", "accion_sugerida", "confianza", "datos_faltantes"],
+  "properties": {
+    "version_esquema": { "const": "1.0" },
+    "que_esta_pasando": {
+      "type": "string", "minLength": 20, "maxLength": 700,
+      "description": "Resumen en lenguaje claro para el NOC: sintoma, desde cuando y en que componente."
+    },
+    "impacto": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nivel", "descripcion", "servicios_afectados"],
+      "properties": {
+        "nivel": { "enum": ["ninguno", "bajo", "medio", "alto", "critico"] },
+        "descripcion": { "type": "string", "minLength": 10, "maxLength": 400 },
+        "servicios_afectados": { "type": "array", "items": { "type": "string", "maxLength": 80 }, "maxItems": 8 }
+      }
+    },
+    "hipotesis": {
+      "type": "array", "minItems": 1, "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["descripcion", "probabilidad", "evidencia"],
+        "properties": {
+          "descripcion": { "type": "string", "minLength": 10, "maxLength": 400 },
+          "probabilidad": { "enum": ["alta", "media", "baja"] },
+          "evidencia": {
+            "type": "array", "minItems": 1, "maxItems": 6,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["referencia", "cita"],
+              "properties": {
+                "referencia": { "type": "string", "pattern": "^(ALERTA|EV|IIS|HTTPERR|PERF)-[A-Za-z0-9_.-]+$" },
+                "cita": { "type": "string", "minLength": 3, "maxLength": 300, "description": "Fragmento textual copiado del elemento de contexto." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "accion_sugerida": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runbook", "justificacion", "requiere_aprobacion_humana"],
+      "properties": {
+        "runbook": { "enum": ["RB-00-ESCALAR", "RB-01-INICIAR-POOL", "RB-02-RECICLAR-POOL", "RB-03-LIBERAR-DISCO", "RB-04-INICIAR-SERVICIO", "RB-05-REVERTIR-DESPLIEGUE", "RB-06-CAPTURAR-DIAGNOSTICO"] },
+        "justificacion": { "type": "string", "minLength": 10, "maxLength": 400 },
+        "requiere_aprobacion_humana": { "const": true }
+      }
+    },
+    "confianza": { "type": "number", "minimum": 0, "maximum": 1 },
+    "datos_faltantes": { "type": "array", "items": { "type": "string", "maxLength": 200 }, "maxItems": 6 }
+  }
+}

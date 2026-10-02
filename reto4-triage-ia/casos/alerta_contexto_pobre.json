@@ -1,0 +1,35 @@
+{
+  "schemaId": "azureMonitorCommonAlertSchema",
+  "data": {
+    "essentials": {
+      "alertId": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.AlertsManagement/alerts/7f1c2b3a-0000-0000-0000-000000000003",
+      "alertRule": "PortalPagos-503-httpsys",
+      "severity": "Sev1",
+      "signalType": "Log",
+      "monitorCondition": "Fired",
+      "monitoringService": "Log Alerts V2",
+      "alertTargetIDs": [
+        "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/rg-portal/providers/microsoft.compute/virtualmachines/web-pagos-01"
+      ],
+      "firedDateTime": "2026-09-18T19:45:00.000Z",
+      "description": "Peticiones rechazadas por HTTP.sys (503) > 50 en 5 minutos",
+      "essentialsVersion": "1.0",
+      "alertContextVersion": "1.0"
+    },
+    "alertContext": {
+      "conditionType": "LogQueryCriteria",
+      "condition": {
+        "windowSize": "PT5M",
+        "allOf": [
+          {
+            "searchQuery": "W3CHttpSysLog | where scStatus == 503 | summarize count() by bin(TimeGenerated,5m)",
+            "metricMeasureColumn": "pct",
+            "operator": "GreaterThan",
+            "threshold": "50",
+            "metricValue": 297
+          }
+        ]
+      }
+    }
+  }
+}

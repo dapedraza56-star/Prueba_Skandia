@@ -20,7 +20,8 @@
 | 5 | "Mejora analisis.py para no ver resultados en la terminal; algo más visual" | Generó un reporte HTML autocontenido (sin CDN) con indicadores, tablas ordenables y filtrables, gráficas incrustadas y modo oscuro. La misma estructura alimenta el Markdown, para que las dos versiones no se contradigan | ✍️ |
 | 6 | "Simplifica el reporte a lo que pide la prueba, con los colores corporativos de Skandia" | Leyó la paleta del CSS público de skandia.co (verde #00C83C, grises #3F3F3F/#362E2E, error #E12B1C, Montserrat). Reorganizó el reporte en las 5 preguntas del Reto 1 y pasó la calidad de datos y los eventos a anexos plegables. En la primera versión el modo oscuro usaba el gris burdeos de la marca y se veía marrón; se cambió a grises neutros | ✍️ |
 | 7 | "Iniciemos la etapa 2" | Listó 12 problemas del .BAT por riesgo, cruzados con la evidencia del Reto 1. Escribió el módulo, el script, el registro de la tarea con gMSA, 31 pruebas Pester y una demo reproducible | ✍️ (revisa la tabla de riesgos: ¿estás de acuerdo con el orden?) |
-| 8 | ✍️ | | |
+| 8 | "Iniciemos el reto 4 dejando las bases de conexión para el 3" | Diseñó el esquema con citas verificables, el catálogo cerrado compartido con el Reto 3, la validación en 3 capas con corrección y modo degradado, 13 pruebas con modelo simulado, 5 casos para el modelo real y una Azure Function base que recibe el webhook y consulta Log Analytics | ✍️ |
+| 9 | ✍️ | | |
 
 ## 3. Situaciones en las que la IA se equivocó o propuso algo riesgoso
 
@@ -36,6 +37,7 @@
 | E8 | El log JSON se escribía con `Add-Content -Encoding UTF8`, que en 5.1 **antepone un BOM** y vuelve inválida la primera línea JSON al ingerirla | Revisar los primeros bytes del archivo de evidencia | Escritura con `UTF8Encoding($false)` y una prueba que verifica que no haya BOM |
 | E9 | Los archivos se guardaron sin BOM. En 5.1, las tildes y la "ñ" de los mensajes se leen mal. También había nombres en plural, contra la convención de PowerShell | PSScriptAnalyzer, ejecutado como prueba | Archivos .ps1/.psm1 en UTF-8 con BOM y funciones renombradas (`Remove-ArchivoAntiguo`, `Get-DumpReciente`) |
 | E10 | La primera prueba de "no usa `net use`" buscaba el texto y fallaba porque aparecía en la documentación | La prueba falló con el script correcto | La prueba analiza el árbol sintáctico (AST) y revisa comandos reales, no comentarios |
+| E11 | En el contexto del triage, el texto del evento OutOfMemory se cortaba en 260 caracteres, **justo antes de la pila `SesionPagoCache.Agregar`**, que es la evidencia clave. El modelo no habría podido citarla | Leer el contexto generado antes de enviarlo al modelo | Límite de 420 caracteres para eventos y una prueba que exige que la pila esté en el contexto |
 | ✍️ | (agrega los que encuentres al revisar) | | |
 
 ## 4. Cómo validé lo que generó la IA y qué no le delegué

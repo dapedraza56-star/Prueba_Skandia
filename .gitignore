@@ -24,3 +24,10 @@ TestResults/
 
 # Enunciado de la prueba (documento de Skandia, no se publica)
 Prueba_Tecnica_*.docx
+
+# Copias generadas por reto4-triage-ia/scripts/empaquetar.ps1
+reto4-triage-ia/azure_function/triage/
+reto4-triage-ia/azure_function/*.json
+!reto4-triage-ia/azure_function/host.json
+!reto4-triage-ia/azure_function/local.settings.ejemplo.json
+local.settings.json

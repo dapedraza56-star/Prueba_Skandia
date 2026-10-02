@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "LOG_ANALYTICS_WORKSPACE_ID": "<guid-del-workspace>",
+    "TRIAGE_PROVEEDOR": "github",
+    "TRIAGE_ENDPOINT": "https://models.github.ai/inference",
+    "TRIAGE_MODELO": "openai/gpt-4.1-mini",
+    "TRIAGE_API_KEY": "<en Azure: referencia a Key Vault; en local: no subir este archivo>"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "descripcion": "Catalogo cerrado de acciones que el triage puede SUGERIR. Ninguna se ejecuta sin aprobacion humana. Los mismos identificadores se usan en la auto-remediacion del Reto 3.",
+  "runbooks": [
+    {
+      "id": "RB-00-ESCALAR",
+      "nombre": "Escalar a la guardia sin accion automatica",
+      "cuando": "La evidencia no alcanza para elegir otra accion, la confianza es baja o el riesgo de actuar es mayor que el de esperar.",
+      "riesgo": "ninguno",
+      "aprueba": "no aplica"
+    },
+    {
+      "id": "RB-01-INICIAR-POOL",
+      "nombre": "Iniciar el pool de aplicaciones detenido (PortalPagosPool)",
+      "cuando": "El pool esta detenido o deshabilitado (WAS 5002, HTTP.sys 503 AppOffline).",
+      "riesgo": "bajo: si la causa sigue activa el pool vuelve a caer",
+      "aprueba": "operador NOC",
+      "runbook_azure": "Start-PortalPagosPool"
+    },
+    {
+      "id": "RB-02-RECICLAR-POOL",
+      "nombre": "Reciclar el pool de forma controlada (overlapped recycle)",
+      "cuando": "El pool esta en ejecucion pero la memoria del proceso crece hacia el limite o hay OutOfMemoryException.",
+      "riesgo": "medio: se pierden las sesiones en memoria de los clientes",
+      "aprueba": "operador NOC",
+      "runbook_azure": "Restart-PortalPagosPool"
+    },
+    {
+      "id": "RB-03-LIBERAR-DISCO",
+      "nombre": "Ejecutar el mantenimiento verificado para liberar disco",
+      "cuando": "Poco espacio libre en disco por logs o volcados de memoria.",
+      "riesgo": "bajo: solo borra lo que ya tiene copia verificada (Reto 2)",
+      "aprueba": "operador NOC",
+      "runbook_azure": "Invoke-MantenimientoPortal"
+    },
+    {
+      "id": "RB-04-INICIAR-SERVICIO",
+      "nombre": "Iniciar un servicio de Windows detenido (Servicio Notificaciones)",
+      "cuando": "Un servicio requerido esta detenido.",
+      "riesgo": "bajo",
+      "aprueba": "operador NOC",
+      "runbook_azure": "Start-ServicioRequerido"
+    },
+    {
+      "id": "RB-05-REVERTIR-DESPLIEGUE",
+      "nombre": "Revertir la ultima version desplegada",
+      "cuando": "Hay evidencia de que el problema empezo con un despliegue reciente.",
+      "riesgo": "alto: requiere cambio de emergencia",
+      "aprueba": "comite de cambios / lider de aplicaciones"
+    },
+    {
+      "id": "RB-06-CAPTURAR-DIAGNOSTICO",
+      "nombre": "Capturar diagnostico (volcado de memoria y contadores) antes de actuar",
+      "cuando": "Hay que conservar evidencia para encontrar la causa antes de reiniciar o reciclar.",
+      "riesgo": "bajo: pausa breve del proceso al tomar el volcado",
+      "aprueba": "operador NOC"
+    }
+  ]
+}

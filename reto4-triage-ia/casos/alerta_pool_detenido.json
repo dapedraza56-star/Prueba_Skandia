@@ -1,0 +1,35 @@
+{
+  "schemaId": "azureMonitorCommonAlertSchema",
+  "data": {
+    "essentials": {
+      "alertId": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.AlertsManagement/alerts/7f1c2b3a-0000-0000-0000-000000000002",
+      "alertRule": "PortalPagos-pool-detenido",
+      "severity": "Sev0",
+      "signalType": "Log",
+      "monitorCondition": "Fired",
+      "monitoringService": "Log Alerts V2",
+      "alertTargetIDs": [
+        "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/rg-portal/providers/microsoft.compute/virtualmachines/web-pagos-01"
+      ],
+      "firedDateTime": "2026-09-18T19:40:00.000Z",
+      "description": "El pool PortalPagosPool fue deshabilitado o HTTP.sys responde 503",
+      "essentialsVersion": "1.0",
+      "alertContextVersion": "1.0"
+    },
+    "alertContext": {
+      "conditionType": "LogQueryCriteria",
+      "condition": {
+        "windowSize": "PT5M",
+        "allOf": [
+          {
+            "searchQuery": "Event | where Source == 'Microsoft-Windows-WAS' and EventID == 5002",
+            "metricMeasureColumn": "pct",
+            "operator": "GreaterThan",
+            "threshold": "0",
+            "metricValue": 1
+          }
+        ]
+      }
+    }
+  }
+}
