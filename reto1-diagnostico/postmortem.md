@@ -73,7 +73,7 @@
 
 ## 5. ¿Se podía ver venir?
 
-**Sí, desde la mañana del miércoles 16/09**, unas 50 horas antes de la caída:
+**Sí, desde el miércoles 16/09 a las 16:15**, unas 46 horas antes de la caída, cuando la memoria del portal superó por primera vez 900 MB:
 
 | Indicador | Normal (antes de la v2.3.1) | Mié 16 | Jue 17 | Vie 18 |
 |---|---|---|---|---|

@@ -18,7 +18,8 @@
 | 3 | "Instala lo que puedas" | Instaló PowerShell 7, Azure CLI, Bicep, gh, gitleaks, Pester, módulos Az y el entorno Python | Validé versiones. No le di credenciales: el login de GitHub y el de Azure los hice yo |
 | 4 | "Iniciemos con la parte 1" | Exploró cada fuente, construyó `carga.py` y `analisis.py`, y propuso la causa raíz con evidencia | ✍️ (qué revisaste tú, qué cifras verificaste a mano) |
 | 5 | "Mejora analisis.py para no ver resultados en la terminal; algo más visual" | Generó un reporte HTML autocontenido (sin CDN) con indicadores, tablas ordenables y filtrables, gráficas incrustadas y modo oscuro. La misma estructura alimenta el Markdown, para que las dos versiones no se contradigan | ✍️ |
-| 6 | ✍️ | | |
+| 6 | "Simplifica el reporte a lo que pide la prueba, con los colores corporativos de Skandia" | Leyó la paleta del CSS público de skandia.co (verde #00C83C, grises #3F3F3F/#362E2E, error #E12B1C, Montserrat). Reorganizó el reporte en las 5 preguntas del Reto 1 y pasó la calidad de datos y los eventos a anexos plegables. En la primera versión el modo oscuro usaba el gris burdeos de la marca y se veía marrón; se cambió a grises neutros | ✍️ |
+| 7 | ✍️ | | |
 
 ## 3. Situaciones en las que la IA se equivocó o propuso algo riesgoso
 

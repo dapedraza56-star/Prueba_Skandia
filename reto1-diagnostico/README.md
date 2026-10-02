@@ -4,7 +4,7 @@
 |---|---|
 | Post-mortem para la Directora (máximo 3 páginas) | [postmortem.md](postmortem.md) |
 | Código reproducible | [src/carga.py](src/carga.py) (lectura y limpieza), [src/analisis.py](src/analisis.py) (análisis, modelos y gráficas) y [src/reporte_html.py](src/reporte_html.py) (reporte visual) |
-| **Reporte visual** (indicadores, tablas ordenables y filtrables, gráficas, modo claro/oscuro; funciona sin internet) | `salidas/reporte.html` |
+| **Reporte visual**, organizado en las 5 preguntas del reto, con anexos plegables, la paleta corporativa de Skandia, tablas ordenables y modo claro/oscuro. Funciona sin internet | `salidas/reporte.html` |
 | Resultados con todas las cifras y su evidencia (versión para GitHub) | [salidas/resultados.md](salidas/resultados.md) |
 | Tablas | `salidas/linea_tiempo.csv`, `salidas/disponibilidad.csv`, `salidas/senales_tempranas.csv` |
 | Gráficas | `salidas/fig1_incidente_18sep.png`, `salidas/fig2_semana_memoria_disco.png`, `salidas/fig3_fuga_memoria.png` |

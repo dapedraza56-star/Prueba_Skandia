@@ -34,7 +34,11 @@ RUTAS_ESCANER = {"/.env", "/wp-login.php", "/phpmyadmin/index.php", "/admin/conf
 UMBRAL_ERROR_PCT = 5.0      # mismo umbral de la alerta de ejemplo (alerta_ejemplo.json)
 UMBRAL_LENTO_MS = 3000      # p95 por encima de 3 s = experiencia degradada (supuesto)
 
-AZUL, ROJO, GRIS, NARANJA = "#2a78d6", "#e34948", "#52514e", "#eb6834"
+# Paleta corporativa Skandia (tomada del CSS publico de skandia.co): verdes de la marca,
+# gris de texto y rojo de error. El verde #00C83C es la marca; para lineas se usan tonos
+# mas oscuros para que contrasten sobre fondo blanco.
+AZUL, ROJO, GRIS, NARANJA = "#009047", "#E12B1C", "#3F3F3F", "#007444"
+VERDE_MARCA = "#00C83C"
 plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False,
                      "axes.grid": True, "grid.color": "#e6e5e0", "grid.linewidth": 0.6,
                      "axes.edgecolor": "#bdbcb6", "figure.dpi": 130})
@@ -417,7 +421,7 @@ def grafica_semana(d, mem, disco):
 def grafica_fuga(mem):
     x = mem["datos"]
     fig, ax = plt.subplots(figsize=(7, 4))
-    colores = [AZUL, NARANJA, ROJO, "#1baf7a", "#4a3aa7"]
+    colores = ["#5FED73", VERDE_MARCA, ROJO, "#007444", "#006042"]
     for (dia, g), col in zip(x.groupby("dia"), colores):
         ax.plot(g.acum / 1000, g.mb, ".", ms=3, color=col, label=str(dia))
     xs = np.linspace(0, mem["pet_hasta_oom"] / 1000 * 1.05, 50)
@@ -438,6 +442,11 @@ FASE_TONO = {"Antecedente": "", "Señal ignorada": "alerta", "Inicio de degradac
              "Degradacion fuerte": "alerta", "Primer error": "critico", "Reporte": "",
              "Deteccion (hipotetica)": "ok", "Caida": "critico", "Caida total": "critico",
              "Recuperacion": "ok", "Riesgo": "alerta"}
+URGENCIA_TONO = {"Crítica": "critico", "Alta": "alerta", "Media": "", "Baja": "ok"}
+
+# Momentos que pide el enunciado: inicio de la degradacion, primer error, caida y recuperacion
+FASES_CLAVE = ["Antecedente", "Señal ignorada", "Inicio de degradacion", "Degradacion fuerte",
+               "Primer error", "Caida", "Caida total", "Recuperacion"]
 
 
 def _es(numero: str) -> str:
@@ -453,99 +462,174 @@ def _fecha(ts, formato="%d/%m %H:%M") -> str:
     return f"{DIAS_ES[ts.weekday()]} {ts.strftime(formato)}"
 
 
-ETIQUETAS = {
-    "dia": "Día", "peticiones": "Operaciones", "fallas": "Fallas",
-    "disp_peticiones_pct": "Disp. por operación (%)", "min_no_disponible": "Min. no disponible",
-    "disp_tiempo_pct": "Disp. por tiempo (%)", "noc_sondeos_fallidos": "Sondeos NOC fallidos",
-    "disp_noc_pct": "Disp. según sondeo NOC (%)", "w3wp_pico_mb": "Memoria pico w3wp (MB)",
-    "p95_19a23h_ms": "Latencia p95 19-23 h (ms)", "errores_500": "Errores 500",
-    "disco_libre_fin_dia_gb": "Disco libre fin del día (GB)", "consumo_disco_mb": "Consumo disco (MB)",
-    "consumo_mb_por_1k_pet": "MB de disco por 1.000 operaciones", "hora": "Hora", "fase": "Fase",
-    "que_paso": "Qué pasó", "que_vio_el_usuario": "Qué vio el usuario", "evidencia": "Evidencia",
-    "evento": "Evento",
-}
+ACENTOS = {"confirmacion": "confirmación", "cache ": "caché ", "Paginas": "Páginas", " mas ": " más ",
+           "Caida": "Caída", "Recuperacion": "Recuperación", "degradacion": "degradación",
+           "Degradacion": "Degradación", "lineas": "líneas", "linea": "línea", "Revision": "Revisión"}
+
+
+def _acentos(df: pd.DataFrame) -> pd.DataFrame:
+    """Los textos del codigo van sin tildes (compatibilidad de consola); en el reporte se corrigen."""
+    def fix(v):
+        if not isinstance(v, str):
+            return v
+        for a, b in ACENTOS.items():
+            v = v.replace(a, b)
+        return v
+    return df.map(fix)
 
 
 def armar_secciones(d, t, disp, salud, s, mem, disco) -> tuple[list, list]:
-    """Estructura comun para el reporte HTML y el Markdown: (kpis, secciones)."""
+    """Estructura comun para el reporte HTML y el Markdown: (kpis, secciones).
+
+    Las secciones siguen las 5 preguntas del Reto 1. El detalle tecnico va en anexos.
+    """
     fmt = lambda ts: "no ocurre en 10 dias" if pd.isna(ts) else _fecha(ts, "%d/%m %H:00")  # noqa: E731
     esc = disco["escenarios"]
     normal = esc["normal (promedio lun-jue)"]
     vie = disp.loc[pd.Timestamp("2026-09-18").date()]
     sem = disp.loc["SEMANA"]
+    pm = d["pm"].set_index("ts")
+    cpc = mem["confirmaciones_por_ciclo"]
+    pct_lim = lambda dia: 100 * cpc.get(pd.Timestamp(dia).date(), 0) / mem["pet_hasta_oom"]  # noqa: E731
+    cruce_900 = pm.w3wp_mb[pm.w3wp_mb > 900].index.min()
 
     kpis = [
-        ("Disponibilidad real viernes 18/09", _es(f"{vie.disp_peticiones_pct:.1f} %"),
+        ("Disponibilidad real · viernes 18/09", _es(f"{vie.disp_peticiones_pct:.1f} %"),
          _es(f"{int(vie.fallas):,} operaciones fallidas"), "critico"),
-        ("Disponibilidad real de la semana", _es(f"{sem.disp_peticiones_pct:.1f} %"),
-         "por operacion de usuario", "alerta"),
-        ("Lo que reporto el NOC", "100 %", _es(f"su propio sondeo /health: {sem.disp_noc_pct:.2f} %"), "neutro"),
-        ("Caida total", "26 min", "14:38 a 15:04 · degradacion desde 11:30", "critico"),
-        ("Fuga de memoria", _es(f"{mem['mb_por_1k'] / 1000:.2f} MB"),
-         _es(f"por pago confirmado · limite ~{mem['pet_hasta_oom']:,.0f} pagos entre reinicios"), "alerta"),
-        ("Disco C: lleno (trafico normal)", fmt(normal["lleno"]),
-         _es(f"quedan {disco['libre0'] / 1024:.1f} GB · {normal['gb_dia']:.1f} GB/dia"), "critico"),
+        ("Disponibilidad real · semana", _es(f"{sem.disp_peticiones_pct:.1f} %"),
+         "el NOC reportó 100 %", "alerta"),
+        ("Portal caído", "26 min", "14:38 a 15:04 · con errores desde 13:23", "critico"),
+        ("Disco C: lleno si no se actúa", fmt(normal["lleno"]),
+         _es(f"quedan {disco['libre0'] / 1024:.1f} GB · se consumen {normal['gb_dia']:.1f} GB/día"), "critico"),
     ]
 
-    tl = t.assign(hora=t.hora.map(lambda x: _fecha(x, "%d/%m %H:%M:%S"))).rename(columns=ETIQUETAS)
-    dd = disp.reset_index()
-    dd["dia"] = dd["dia"].map(lambda x: x if isinstance(x, str) else _fecha(pd.Timestamp(x), "%d/%m"))
-    dd = dd.round(2).rename(columns=ETIQUETAS)
-    cpc = (mem["confirmaciones_por_ciclo"].rename("confirmaciones")
-           .rename_axis("ciclo que inicia a las 02:00 del").reset_index())
-    cpc["% del limite"] = (100 * cpc.confirmaciones / mem["pet_hasta_oom"]).round(0)
-    cpc.iloc[:, 0] = cpc.iloc[:, 0].map(lambda x: _fecha(pd.Timestamp(x), "%d/%m"))
-    s2 = s.reset_index()
-    s2["dia"] = s2["dia"].map(lambda x: _fecha(pd.Timestamp(x), "%d/%m"))
-    s2 = s2.rename(columns=ETIQUETAS)
-    pron = pd.DataFrame([(k, round(v["gb_dia"], 1), fmt(v["bajo_5pct"]), fmt(v["lleno"])) for k, v in esc.items()],
-                        columns=["escenario de trafico", "GB/dia", "libre < 5 %", "disco lleno"])
+    # 1. Linea de tiempo: solo los momentos que pide el enunciado
+    tl = t[t.fase.isin(FASES_CLAVE)].copy()
+    tl = tl[~((tl.fase == "Recuperacion") & tl.que_paso.str.startswith("Primera respuesta"))]
+    tl = tl[["hora", "fase", "que_paso", "que_vio_el_usuario", "evidencia"]]
+    tl["hora"] = tl.hora.map(lambda x: _fecha(x, "%d/%m %H:%M"))
+    tl.columns = ["Hora", "Fase", "Qué pasó", "Qué vio el usuario", "Evidencia"]
+    tl = _acentos(tl)
+    # mismas fases que FASE_TONO, pero con la ortografia que se muestra en el reporte
+    tono_fase = dict(zip(_acentos(pd.DataFrame({"f": list(FASE_TONO)})).f, FASE_TONO.values()))
 
-    nota_salud = (f"Mientras los usuarios fallaban (18/09 13:20-14:38): **{salud['usuarios_err_pct']:.1f} %** de "
-                  f"errores y p95 de **{salud['usuarios_p95_ms'] / 1000:.1f} s**; el sondeo /health respondio 200 en "
-                  f"**{salud['sondeos_ok']} de {salud['sondeos']}** intentos (p95 {salud['sondeo_p95_ms']:.0f} ms).")
-    texto_mem = (f"**{mem['mb_por_1k'] / 1000:.3f} MB por cada pago confirmado** (R² {mem['r2']:.3f}), partiendo de "
-                 f"{mem['intercepto_mb']:.0f} MB tras el reinicio. El OutOfMemory aparecio con "
-                 f"~{mem['umbral_oom_mb']:,.0f} MB: se alcanza con ~{mem['pet_hasta_oom']:,.0f} confirmaciones en un "
-                 f"mismo ciclo entre reinicios (observado el 18/09: {mem['confirmaciones_hasta_crash']:,} "
-                 "confirmaciones entre las 02:00 y el primer crash).")
-    texto_disco = (f"Consumo = {disco['base_mb_h']:.0f} MB/h + **{disco['mb_por_peticion']:.3f} MB por peticion** "
-                   f"(R² {disco['r2']:.2f}). Los dumps del 18/09 ocuparon ~{disco['dumps_mb']:,.0f} MB. "
-                   f"Libre al cierre: {disco['libre0'] / 1024:.1f} GB de {disco['total_mb'] / 1024:.0f} GB.")
+    # 2. Causa raiz: hechos vs hipotesis
+    hechos = pd.DataFrame([
+        ("Todos los errores del viernes son OutOfMemoryException en SesionPagoCache.Agregar (confirmar pago)",
+         "eventos líneas 304-346 (40) y 347-368 (5 crashes)"),
+        (f"La memoria del portal crece {_es(f'{mem['mb_por_1k'] / 1000:.2f}')} MB por cada pago confirmado "
+         f"desde la v2.3.1 (R² {_es(f'{mem['r2']:.3f}')}); antes era estable en ~310 MB",
+         "Perfmon Private Bytes vs. log IIS · figura 3"),
+        (_es(f"El límite se alcanza con ~{mem['pet_hasta_oom']:,.0f} pagos sin reinicio; el viernes cayó con "
+             f"{mem['confirmaciones_hasta_crash']:,}"), "modelo de memoria · log IIS"),
+        ("El viernes (fin de plazo) hubo 2,3 veces los pagos de un día normal", "log IIS /api/pagos/confirmar"),
+        ("Tras 5 crashes en 16 min, Windows deshabilitó el pool y todo respondió 503 hasta el reinicio manual",
+         "eventos línea 366 · httperr1.log líneas 5-1545"),
+        ("El reinicio nocturno de IIS (02:00) devolvía la memoria a 300 MB y ocultaba la fuga",
+         "eventos 3201/3202 diarios · figura 2"),
+        ("DCOM 10016 aparece igual toda la semana: no tiene relación con la caída (ticket T-10261)",
+         "anexo B · eventos por día"),
+    ], columns=["Hecho", "Evidencia"])
+    hipotesis = pd.DataFrame([
+        ("La caché guarda cada sesión de pago y nunca la expulsa (sin vencimiento ni tamaño máximo)",
+         "Revisar código de SesionPagoCache v2.3.1 o un dump de C:\\CrashDumps"),
+        ("El proceso falla con ~1,5 GB aunque hay 4,7 GB libres: pool en 32 bits o con límite de memoria",
+         "Revisar applicationHost.config (enable32BitAppOnWin64, privateMemory)"),
+        ("El disco se consume por el log en nivel Debug activado en la v2.3.1",
+         "Revisar tamaño de los logs de la aplicación en C:"),
+    ], columns=["Hipótesis", "Cómo confirmarla"])
+    factores = [
+        "**Reinicio nocturno que oculta problemas:** la fuga solo podía estallar en un día de muchos pagos.",
+        "**Despliegue sin verificación posterior:** nadie comparó memoria ni tiempos antes y después de la v2.3.1.",
+        "**Monitoreo de infraestructura, no de cliente:** ping y /health dicen que el servidor está prendido, "
+        "no que se pueda pagar.",
+        "**Señales sin conectar:** el ticket de lentitud del jueves se cerró con «monitoreo en verde».",
+    ]
+
+    # 3. Disponibilidad real vs NOC
+    dd = disp.reset_index()
+    dd = pd.DataFrame({
+        "Día": dd["dia"].map(lambda x: x if isinstance(x, str) else _fecha(pd.Timestamp(x), "%d/%m")).replace(
+            {"SEMANA": "Semana"}),
+        "Operaciones": dd.peticiones.astype(int), "Fallidas": dd.fallas.astype(int),
+        "Disponibilidad real (%)": dd.disp_peticiones_pct.round(2),
+        "Según sondeo del NOC (%)": dd.disp_noc_pct.round(2),
+        "Reportado por el NOC (%)": 100,
+    })
+
+    # 4. Señales tempranas
+    sen = pd.DataFrame({
+        "Día": [_fecha(pd.Timestamp(x), "%d/%m") for x in s.index],
+        "Memoria pico (MB)": s.w3wp_pico_mb.round(0).astype(int).to_numpy(),
+        "Pagos vs. límite de memoria (%)": [round(pct_lim(x)) for x in s.index],
+        "Latencia p95 19-23 h (s)": (s.p95_19a23h_ms / 1000).round(1).to_numpy(),
+        "Disco consumido (GB)": (s.consumo_disco_mb / 1024).round(1).to_numpy(),
+    })
+
+    # 5. Otros riesgos
+    riesgos = pd.DataFrame([
+        ("Crítica", "Disco C: se llena",
+         _es(f"{disco['mb_por_peticion']:.2f} MB por operación desde la v2.3.1 y el .BAT ya no limpia (apunta a D:). "
+             f"Lleno el {fmt(normal['lleno'])} con tráfico normal; {fmt(esc['alto (como el viernes 18/09)']['lleno'])} "
+             f"con tráfico alto")),
+        ("Alta", "La caída se repite",
+         _es(f"Cualquier día con más de ~{mem['pet_hasta_oom']:,.0f} pagos entre reinicios. Un día normal ya está "
+             "al 68 % del límite")),
+        ("Alta", "Script de mantenimiento inseguro",
+         "Contraseña en texto plano, iisreset diario innecesario y siempre reporta «OK» aunque falle"),
+        ("Media", "Cambio no registrado", "Aparece un balanceador delante del servidor el 16/09 (cambia el log)"),
+        ("Media", "Servicio Notificaciones inestable", "Arranca 3-8 veces por día sin registro de detención"),
+        ("Baja", "Escaneos de internet", "~250 peticiones/día a /.env, /wp-login.php; hoy sin impacto"),
+    ], columns=["Urgencia", "Riesgo", "Detalle y pronóstico"])
+    pron = pd.DataFrame([(k.split(" (")[0].capitalize(), k.split(" (")[1].rstrip(")"), round(v["gb_dia"], 1),
+                          fmt(v["bajo_5pct"]), fmt(v["lleno"])) for k, v in esc.items()],
+                        columns=["Tráfico", "Supuesto", "GB por día", "Libre < 5 %", "Disco lleno"])
 
     secciones = [
-        dict(id="calidad", titulo="1. Calidad de los datos",
-             texto=["Los archivos llegan sin depurar. Estas decisiones de limpieza cambian las conclusiones."],
-             tablas=[dict(df=calidad(d))]),
-        dict(id="linea", titulo="2. Linea de tiempo",
-             texto=["Hora de Colombia. Cada fila cita el archivo y la linea que la respalda."],
-             tablas=[dict(df=tl, filtro=True, chips={"Fase": lambda v: FASE_TONO.get(v, "")})],
+        dict(id="linea", titulo="1. Línea de tiempo del 18/09",
+             texto=["Hora de Colombia. Cuándo empezó la degradación, el primer error, la caída y la recuperación, "
+                    "y qué vio el usuario en cada momento."],
+             tablas=[dict(df=tl, chips={"Fase": lambda v: tono_fase.get(v, "")})],
              figuras=[SALIDAS / "fig1_incidente_18sep.png"]),
-        dict(id="disp", titulo="3. Disponibilidad real vs. NOC",
-             texto=["Usuarios reales: sin archivos estaticos, sin el sondeo del NOC y sin escaneres. "
-                    "`disp_tiempo_pct` cuenta ventanas de 5 min con mas de 5 % de errores y al menos 3 fallas."],
-             tablas=[dict(df=dd, nota=[nota_salud],
-                          resaltar=lambda f: "total" if f["Día"] == "SEMANA"
-                          else ("critico" if f["Disp. por operación (%)"] < 99 else ""))]),
-        dict(id="senales", titulo="4. Señales tempranas",
-             texto=["Desde el miercoles 16/09 la memoria pico, la latencia nocturna y el consumo de disco "
-                    "se multiplican frente a lunes y martes."],
-             tablas=[dict(df=s2, resaltar=lambda f: "critico" if f["Día"].startswith("vie 18")
-                          else ("alerta" if f["Memoria pico w3wp (MB)"] > 900 else ""))],
-             figuras=[SALIDAS / "fig2_semana_memoria_disco.png"]),
-        dict(id="memoria", titulo="5. Pronostico: fuga de memoria", texto=[texto_mem],
-             tablas=[dict(df=cpc, resaltar=lambda f: "critico" if f["% del limite"] >= 100
-                          else ("alerta" if f["% del limite"] >= 75 else ""))],
+        dict(id="causa", titulo="2. Causa raíz y factores contribuyentes",
+             texto=["**Causa raíz:** una fuga de memoria introducida en la versión 2.3.1 (15/09 22:03). Cada pago "
+                    "confirmado deja memoria que nunca se libera; el viernes, con 2,3 veces más pagos, el proceso se "
+                    "quedó sin memoria a mitad de la tarde."],
+             tablas=[dict(df=hechos, titulo="Hechos (con evidencia)"),
+                     dict(df=hipotesis, titulo="Hipótesis (por confirmar)")],
+             lista=factores, lista_titulo="Factores que contribuyeron",
              figuras=[SALIDAS / "fig3_fuga_memoria.png"]),
-        dict(id="disco", titulo="6. Pronostico: disco C:",
-             texto=[texto_disco,
-                    "Cada crash adicional de w3wp deja un dump de ~1,4 GB en C:\\CrashDumps y adelanta el llenado."],
-             tablas=[dict(df=pron, resaltar=lambda f: "critico" if "normal" in f["escenario de trafico"] else "")]),
-        dict(id="eventos", titulo="7. Eventos de Windows por dia",
-             texto=["Separa ruido de señal: DCOM 10016 aparece igual toda la semana; los eventos criticos solo el 18/09."],
-             tablas=[dict(df=eventos_por_dia(d["ev"]).reset_index().rename(columns=ETIQUETAS),
-                          resaltar=lambda f: "critico" if f["Evento"] in
-                          {".NET crash w3wp", "WAS pool deshabilitado", "ASP.NET excepcion no manejada"} else "")]),
+        dict(id="disp", titulo="3. Disponibilidad real vs. lo que reporta el NOC",
+             texto=["Disponibilidad real = operaciones de clientes sin error (sin archivos estáticos, sin el sondeo del "
+                    "NOC y sin escáneres). Incluye los 503 de la caída, que solo quedaron en el log de HTTP.sys."],
+             tablas=[dict(df=dd, resaltar=lambda f: "total" if f["Día"] == "Semana"
+                          else ("critico" if f["Disponibilidad real (%)"] < 99 else ""),
+                          nota=[f"**¿Por qué no coincide?** El NOC solo mide ping y /health. Mientras los clientes "
+                                f"tenían {_es(f'{salud['usuarios_err_pct']:.0f}')} % de errores y esperas de "
+                                f"{_es(f'{salud['usuarios_p95_ms'] / 1000:.0f}')} s, /health respondió OK en "
+                                f"{salud['sondeos_ok']} de {salud['sondeos']} intentos: verifica que el servidor "
+                                "responde, no que se pueda pagar. Solo falló en los 26 min de caída total."])]),
+        dict(id="senales", titulo="4. Señales tempranas: ¿se podía ver venir?",
+             texto=[f"**Sí, desde el {_fecha(cruce_900, '%d/%m a las %H:%M')}** (unas 46 horas antes): la memoria "
+                    "del portal superó 900 MB por primera vez (antes del despliegue nunca pasaba de 320 MB). "
+                    "El jueves los pagos ya llegaban al 78 % del límite y la latencia nocturna se triplicó.",
+                    "El disco del lunes y martes casi no baja porque el script todavía liberaba espacio cada noche; "
+                    "desde el 16/09 ya no (apunta a D:, que se retiró)."],
+             tablas=[dict(df=sen, resaltar=lambda f: "critico" if f["Día"].startswith("vie 18")
+                          else ("alerta" if f["Memoria pico (MB)"] > 900 else ""))],
+             figuras=[SALIDAS / "fig2_semana_memoria_disco.png"]),
+        dict(id="riesgos", titulo="5. Otros riesgos y pronóstico",
+             tablas=[dict(df=riesgos, chips={"Urgencia": lambda v: URGENCIA_TONO.get(v, "")}),
+                     dict(df=pron, titulo="Pronóstico del disco C: (si no se hace nada)",
+                          resaltar=lambda f: "critico" if f["Tráfico"] == "Normal" else "",
+                          nota=[_es(f"Método: regresión del consumo horario de disco contra las operaciones "
+                                    f"(R² {disco['r2']:.2f}, {disco['mb_por_peticion']:.2f} MB por operación), "
+                                    "proyectada con el perfil horario observado de cada tipo de día. Cada crash "
+                                    "adicional deja un dump de ~1,4 GB y adelanta la fecha.")])]),
+        dict(id="anexo-a", titulo="Anexo A · Calidad de los datos", anexo=True,
+             tablas=[dict(df=calidad(d))]),
+        dict(id="anexo-b", titulo="Anexo B · Eventos de Windows por día", anexo=True,
+             tablas=[dict(df=eventos_por_dia(d["ev"]).reset_index().rename(columns={"evento": "Evento"}))]),
     ]
     return kpis, secciones
 
@@ -559,7 +643,12 @@ def escribir_markdown(kpis, secciones) -> Path:
         r.append(f"## {s['titulo']}\n")
         r += [p + "\n" for p in s.get("texto", [])]
         for t in s.get("tablas", []):
+            if t.get("titulo"):
+                r.append(f"**{t['titulo']}**\n")
             r += [md(t["df"]), ""] + [p + "\n" for p in t.get("nota", [])]
+        if s.get("lista"):
+            r.append(f"**{s.get('lista_titulo', '')}**\n")
+            r += [f"- {x}" for x in s["lista"]] + [""]
         r += [f"![{f.stem}]({f.name})\n" for f in s.get("figuras", [])]
     destino = SALIDAS / "resultados.md"
     destino.write_text("\n".join(r), encoding="utf-8")
@@ -591,8 +680,8 @@ def main(argv=None):
 
     kpis, secciones = armar_secciones(d, t, disp, salud, s, mem, disco)
     md_path = escribir_markdown(kpis, secciones)
-    html_path = generar(SALIDAS / "reporte.html", "PortalPagos · Diagnostico del incidente del 18/09/2026",
-                        "Andina Financiera (caso ficticio) · semana del 14 al 20 de septiembre · hora de Colombia",
+    html_path = generar(SALIDAS / "reporte.html", "Reto 1 · Diagnóstico del incidente de PortalPagos (18/09/2026)",
+                        "Andina Financiera (caso ficticio) · semana del 14 al 20 de septiembre de 2026 · horas en hora de Colombia",
                         kpis, secciones)
 
     print("\nResumen")
