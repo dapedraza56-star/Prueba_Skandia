@@ -1,0 +1,9 @@
+Id,FechaHoraReporte,Prioridad,Grupo,Descripcion,Estado,NotaCierre
+T-10231,2026-09-16 08:40,Media,Red,VPN lenta en sede norte,Cerrado,Se reinicia concentrador VPN sede norte.
+T-10236,2026-09-16 15:02,Baja,Seguridad,Muchos 404 a /wp-login.php y /.env en el portal,Cerrado,Escaneos automaticos de internet. Sin impacto.
+T-10240,2026-09-17 16:10,Media,Aplicaciones,Portal de pagos lento en la tarde,Cerrado,No se reproduce. Monitoreo en verde.
+T-10252,2026-09-18 13:34,Alta,Aplicaciones,Error al confirmar pago (mensaje: ha ocurrido un error inesperado),Cerrado,Duplicado de T-10255.
+T-10253,2026-09-18 14:26,Alta,Aplicaciones,Varios clientes no pueden pagar,Cerrado,Duplicado de T-10255.
+T-10255,2026-09-18 14:42,Critica,Infraestructura,Portal de pagos caido: Service Unavailable,Cerrado,Se reinicia manualmente el pool PortalPagosPool a las 15:04. Servicio restablecido. Causa: por determinar.
+T-10261,2026-09-19 09:05,Baja,Infraestructura,Revisar alertas de DCOM 10016 en WEB-PAGOS-01,Abierto,Muchos warnings DCOM en el visor de eventos. Posible causa de la caida del viernes?
+T-10270,2026-09-20 09:15,Baja,NOC,Revision semanal WEB-PAGOS-01,Cerrado,"Ping OK, /health OK 100%. Servidor sin novedades."

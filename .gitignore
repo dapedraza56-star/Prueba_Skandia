@@ -1,0 +1,26 @@
+# Entornos y secretos
+.venv/
+.env
+*.env
+local.settings.json
+*.pfx
+*.publishsettings
+*.key
+
+# Archivos temporales de Office y del sistema
+~$*
+Thumbs.db
+desktop.ini
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Resultados de pruebas y salidas generadas
+TestResults/
+*.trx
+
+# Enunciado de la prueba (documento de Skandia, no se publica)
+Prueba_Tecnica_*.docx
