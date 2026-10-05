@@ -1,28 +1,27 @@
 # Bitácora de uso de IA
 
-> Se lleva durante el trabajo, no al final. Las entradas marcadas con ✍️ debe completarlas o revisarlas el autor con su propio criterio.
-
 ## 1. Herramientas y modelos
 
 | Herramienta | Modelo | Para qué |
 |---|---|---|
-| Claude Code (app de escritorio) | Claude Opus 5.5 | Leer el enunciado, preparar el entorno, explorar los datos, escribir el código de análisis y las pruebas, y redactar borradores del post-mortem |
-| ✍️ (otras que uses: ChatGPT, Copilot…) | | |
+| Claude Code | Claude Opus 5.5 | Leer el enunciado, preparar el entorno, explorar los datos, escribir el código de análisis y las pruebas, y redactar borradores del post-mortem |
+| VS Code + extensión de Python y panel de pruebas | — | Ejecutar y validar yo mismo el código y las pruebas que generó la IA |
+ |
 
 ## 2. Prompts clave
 
 | # | Prompt (resumen) | Qué respondió la IA | Qué hice con eso |
 |---|---|---|---|
-| 1 | "Interpreta el Word del reto y enlista temas, herramientas y entornos" | Extrajo el texto del .docx y lo resumió por reto. Al revisar el kit por encima, advirtió las trampas: logs en UTC, archivo duplicado, `/health` engañoso, contraseña en el .BAT | ✍️ |
-| 2 | "¿Qué entornos debo habilitar para Azure y el resto de la prueba?" | Revisó qué había instalado en el equipo y propuso una lista. Separó lo que debía hacer yo (cuentas, tarjeta, presupuesto) de lo que podía instalar ella | ✍️ |
-| 3 | "Instala lo que puedas" | Instaló PowerShell 7, Azure CLI, Bicep, gh, gitleaks, Pester, módulos Az y el entorno Python | Validé versiones. No le di credenciales: el login de GitHub y el de Azure los hice yo |
-| 4 | "Iniciemos con la parte 1" | Exploró cada fuente, construyó `carga.py` y `analisis.py`, y propuso la causa raíz con evidencia | ✍️ (qué revisaste tú, qué cifras verificaste a mano) |
-| 5 | "Mejora analisis.py para no ver resultados en la terminal; algo más visual" | Generó un reporte HTML autocontenido (sin CDN) con indicadores, tablas ordenables y filtrables, gráficas incrustadas y modo oscuro. La misma estructura alimenta el Markdown, para que las dos versiones no se contradigan | ✍️ |
-| 6 | "Simplifica el reporte a lo que pide la prueba, con los colores corporativos de Skandia" | Leyó la paleta del CSS público de skandia.co (verde #00C83C, grises #3F3F3F/#362E2E, error #E12B1C, Montserrat). Reorganizó el reporte en las 5 preguntas del Reto 1 y pasó la calidad de datos y los eventos a anexos plegables. En la primera versión el modo oscuro usaba el gris burdeos de la marca y se veía marrón; se cambió a grises neutros | ✍️ |
-| 7 | "Iniciemos la etapa 2" | Listó 12 problemas del .BAT por riesgo, cruzados con la evidencia del Reto 1. Escribió el módulo, el script, el registro de la tarea con gMSA, 31 pruebas Pester y una demo reproducible | ✍️ (revisa la tabla de riesgos: ¿estás de acuerdo con el orden?) |
-| 8 | "Iniciemos el reto 4 dejando las bases de conexión para el 3" | Diseñó el esquema con citas verificables, el catálogo cerrado compartido con el Reto 3, la validación en 3 capas con corrección y modo degradado, 13 pruebas con modelo simulado, 5 casos para el modelo real y una Azure Function base que recibe el webhook y consulta Log Analytics | ✍️ |
-| 9 | "Iniciemos con la prueba número 5" | Calculó las líneas base de MTTD, MTTR y disponibilidad con los datos del Reto 1. Redactó 5 iniciativas priorizadas por impacto, esfuerzo y riesgo, y generó el PDF verificando el límite de 2 páginas. En la primera versión del PDF una lista anidada rompía la numeración | ✍️ (las iniciativas y lo que "no haría" deben reflejar tu criterio: ajústalas) |
-| 10 | ✍️ | | |
+| 1 | "Interpreta el Word del reto y enlista temas, herramientas y entornos" | Extrajo el texto del .docx y lo resumió por reto. Al revisar el kit por encima, advirtió las trampas: logs en UTC, archivo duplicado, `/health` engañoso, contraseña en el .BAT | Usé el resumen para planear los 5 retos y decidir el orden: primero el Reto 1, porque todo lo demás depende del diagnóstico. Comparé el resumen con el Word original para confirmar que no faltara ningún entregable.  |
+| 2 | "¿Qué entornos debo habilitar para Azure y el resto de la prueba?" | Revisó qué había instalado en el equipo y propuso una lista de instalación. Separó lo que debía hacer yo (cuentas, tarjeta, presupuesto) de lo que podía instalar ella | Acepté la lista, pero separé lo que me tocaba a mí: crear la cuenta de Azure y el inicio de sesión en GitHub. No le pasé ninguna contraseña. Elegí yo la extensión de KQL (Kuskus). |
+| 3 | "Instalacion de las herramientas" | Se Instaló PowerShell 7, Azure CLI, Bicep, gh, gitleaks, Pester, módulos Az y el entorno Python | Validé versiones. No le di credenciales: el login de GitHub y el de Azure los hice yo |
+| 4 | "Iniciemos con la parte 1" | Exploró cada fuente, construyó `carga.py` y `analisis.py`, y propuso la causa raíz con evidencia | Ejecuté las pruebas en VS Code (4 de 4 en verde) y `analisis.py`. Abrí en el kit las líneas citadas — eventos 109, 304 y 366, y la línea 5 de httperr1.log. Hice fallar una prueba a propósito para comprobar que detecta errores|
+| 5 | "Mejora analisis.py para no ver resultados en la terminal; algo más visual" | Generó un reporte HTML autocontenido (sin CDN) con indicadores, tablas ordenables y filtrables, gráficas incrustadas y modo oscuro. La misma estructura alimenta el Markdown, para que las dos versiones no se contradigan | La idea del reporte visual fue mía: la salida en la terminal no servía para presentar resultados. Revisé el reporte ppara validar la información consolidada. |
+| 6 | "Simplifica el reporte a lo que pide la prueba, con los colores corporativos de Skandia" | Leyó la paleta del CSS público de skandia.co (verde #00C83C, grises #3F3F3F/#362E2E, error #E12B1C, Montserrat). Reorganizó el reporte en las 5 preguntas del Reto 1 y pasó la calidad de datos y los eventos a anexos plegables. En la primera versión el modo oscuro usaba el gris burdeos de la marca y se veía marrón; se cambió a grises neutros | Pedí simplificar porque la primera versión del reporte tenía más información de la que pide la prueba. Le indiqué que se ciñera a las 5 preguntas del Reto 1 y usara los colores de Skandia. Decidí no incluir el logo de Skandia porque el caso es de una empresa ficticia |
+| 7 | "Iniciemos la etapa 2" | Listó 12 problemas del .BAT por riesgo, cruzados con la evidencia del Reto 1. Escribió el módulo, el script, el registro de la tarea con gMSA, 31 pruebas Pester y una demo reproducible | Revisé la tabla de riesgos del `.bat`. Ejecuté las pruebas Pester [en PowerShell 5.1 y 7] |
+| 8 | "Iniciemos el reto 4 dejando las bases de conexión para el 3" | Diseñó el esquema con citas verificables, el catálogo cerrado compartido con el Reto 3, la validación en 3 capas con corrección y modo degradado, 13 pruebas con modelo simulado, 5 casos para el modelo real y una Azure Function base que recibe el webhook y consulta Log Analytics | Decidí usar GitHub Models en lugar de Azure OpenAI para no depender de la suscripción. El token lo creé yo con el permiso mínimo (*Models: Read*) y lo guardé en `.env`, nunca en el chat. ` |
+| 9 | "Iniciemos con la prueba número 5" | Calculó las líneas base de MTTD, MTTR y disponibilidad con los datos del Reto 1.Se Redactó 5 iniciativas priorizadas por impacto, esfuerzo y riesgo,validando en conjunto los items de proyeccion de la propuesta teniendo en cuenta el analisis de categorización de las prioridades segun las los incidentes que detecte y asi se generó el PDF verificando el límite de 2 páginas.   |
+
 
 ## 3. Situaciones en las que la IA se equivocó o propuso algo riesgoso
 
@@ -39,7 +38,8 @@
 | E9 | Los archivos se guardaron sin BOM. En 5.1, las tildes y la "ñ" de los mensajes se leen mal. También había nombres en plural, contra la convención de PowerShell | PSScriptAnalyzer, ejecutado como prueba | Archivos .ps1/.psm1 en UTF-8 con BOM y funciones renombradas (`Remove-ArchivoAntiguo`, `Get-DumpReciente`) |
 | E10 | La primera prueba de "no usa `net use`" buscaba el texto y fallaba porque aparecía en la documentación | La prueba falló con el script correcto | La prueba analiza el árbol sintáctico (AST) y revisa comandos reales, no comentarios |
 | E11 | En el contexto del triage, el texto del evento OutOfMemory se cortaba en 260 caracteres, **justo antes de la pila `SesionPagoCache.Agregar`**, que es la evidencia clave. El modelo no habría podido citarla | Leer el contexto generado antes de enviarlo al modelo | Límite de 420 caracteres para eventos y una prueba que exige que la pila esté en el contexto |
-| ✍️ | (agrega los que encuentres al revisar) | | |
+| E12 | **Detectado por mí.** La primera versión del reporte del Reto 1 tenía 7 secciones y 6 indicadores, con información que la prueba no pide (por ejemplo, tablas técnicas de calidad de datos al mismo nivel que las conclusiones). Para la Directora era difícil de leer | Al abrir el reporte en el navegador y compararlo con lo que pide el enunciado | Pedí reorganizarlo en las 5 preguntas del reto. El detalle técnico pasó a anexos plegables |
+
 
 ## 4. Cómo validé lo que generó la IA y qué no le delegué
 
@@ -47,9 +47,12 @@
 - Pruebas automáticas de las decisiones de limpieza que cambian las conclusiones: zona horaria, duplicado, esquema y ventana de la caída (`reto1-diagnostico/tests`).
 - Cada cifra del post-mortem sale de `analisis.py` y se puede regenerar.
 - Se cruzan fuentes independientes. Por ejemplo, la caída según HTTP.sys (14:38–15:04) coincide con el ticket T-10255, y el modelo de memoria predice el OutOfMemory con 2.369 confirmaciones cuando el observado fue 2.387.
-- ✍️ Revisión manual: abrí los archivos en las líneas citadas y comprobé que dicen lo que el informe afirma.
+- Ejecuté yo mismo, en VS Code, las pruebas del Reto 1 (4/4) , las del Reto 2 (31/31) y las del Reto 4 (13/13).
+- Abrí los archivos del kit en las líneas citadas y comprobé que dicen lo que afirma el informe: despliegue en la línea 109, primer OutOfMemory en la 304, pool deshabilitado en la 366.
+- Hice fallar una prueba a propósito para confirmar que no pasan siempre.
+- Ejecuté la demo del Reto 2 y verifiqué que la simulación con -WhatIf no tocó ningún archivo.
 
 **Lo que no delegué:**
 - Credenciales: los logins de GitHub y Azure y el token del modelo los hago yo, y nunca entran al chat ni al repositorio.
-- La decisión de qué es hecho y qué es hipótesis en el post-mortem: ✍️.
-- ✍️
+- **Hecho contra hipótesis:** revisé la tabla del post-mortem. Por ejemplo, dejé como hipótesis (P2) que el pool corre en 32 bits, porque los datos muestran el síntoma (OutOfMemory con 4,7 GB libres) pero no la configuración. Afirmarlo sin ver `applicationHost.config` sería inventar. `.
+- **Qué no le pedí a la IA:** Creacion de repositorios para la trazabilidad del proyecto, confirmacion de las pruebas segun cada item a evaluar, validando la información.

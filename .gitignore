@@ -31,3 +31,6 @@ reto4-triage-ia/azure_function/*.json
 !reto4-triage-ia/azure_function/host.json
 !reto4-triage-ia/azure_function/local.settings.ejemplo.json
 local.settings.json
+
+# Guia personal de trabajo (no se entrega)
+GUIA_PENDIENTES.md
