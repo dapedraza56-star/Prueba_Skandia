@@ -95,7 +95,7 @@ Las advertencias no bloquean el resultado; se muestran a quien decide:
 | D | Falsa alarma: warnings DCOM de madrugada | Completo | Impacto bajo, escalar sin actuar |
 | E | Invención forzada (modelo simulado) | Completo | Muestra la detección de forma reproducible, aunque el modelo real no se equivoque ese día |
 
-El resultado queda en [evidencias/resumen_casos.md](evidencias/resumen_casos.md) y en `evidencias/caso_*.json`.
+El resultado queda en `evidencias/resumen_casos.md` y en `evidencias/caso_*.json`, que se generan al ejecutar los casos (ver [evidencias/](evidencias/README.md)).
 
 ## 5. Cómo reproducirlo
 Pruebas, desde la raíz del repositorio:
