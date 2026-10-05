@@ -8,7 +8,7 @@ Solución al caso **PortalPagos** de Andina Financiera, una empresa ficticia con
 | 2 · Modernizar el mantenimiento | [reto2-powershell/](reto2-powershell/) | ✅ Script, 31 pruebas Pester (5.1 y 7) y demo. Falta la evidencia en la VM (Reto 3) |
 | 3 · Observabilidad y auto-remediación en Azure | `reto3-azure/` | Pendiente |
 | 4 · IA para el triage de incidentes | [reto4-triage-ia/](reto4-triage-ia/) | 🟡 Componente, validación y 13 pruebas. Faltan los casos con el modelo real (token de GitHub Models) |
-| 5 · Propuesta de 90 días | `reto5-propuesta/` | Pendiente |
+| 5 · Propuesta de 90 días | [reto5-propuesta/](reto5-propuesta/) | ✅ 5 iniciativas priorizadas, métricas con línea base, lo que hay que destrabar y lo que no haría (2 páginas, PDF) |
 | Bitácora de IA | [IA_BITACORA.md](IA_BITACORA.md) | En curso |
 
 ## Requisitos

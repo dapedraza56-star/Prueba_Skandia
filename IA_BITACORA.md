@@ -21,7 +21,8 @@
 | 6 | "Simplifica el reporte a lo que pide la prueba, con los colores corporativos de Skandia" | Leyó la paleta del CSS público de skandia.co (verde #00C83C, grises #3F3F3F/#362E2E, error #E12B1C, Montserrat). Reorganizó el reporte en las 5 preguntas del Reto 1 y pasó la calidad de datos y los eventos a anexos plegables. En la primera versión el modo oscuro usaba el gris burdeos de la marca y se veía marrón; se cambió a grises neutros | ✍️ |
 | 7 | "Iniciemos la etapa 2" | Listó 12 problemas del .BAT por riesgo, cruzados con la evidencia del Reto 1. Escribió el módulo, el script, el registro de la tarea con gMSA, 31 pruebas Pester y una demo reproducible | ✍️ (revisa la tabla de riesgos: ¿estás de acuerdo con el orden?) |
 | 8 | "Iniciemos el reto 4 dejando las bases de conexión para el 3" | Diseñó el esquema con citas verificables, el catálogo cerrado compartido con el Reto 3, la validación en 3 capas con corrección y modo degradado, 13 pruebas con modelo simulado, 5 casos para el modelo real y una Azure Function base que recibe el webhook y consulta Log Analytics | ✍️ |
-| 9 | ✍️ | | |
+| 9 | "Iniciemos con la prueba número 5" | Calculó las líneas base de MTTD, MTTR y disponibilidad con los datos del Reto 1. Redactó 5 iniciativas priorizadas por impacto, esfuerzo y riesgo, y generó el PDF verificando el límite de 2 páginas. En la primera versión del PDF una lista anidada rompía la numeración | ✍️ (las iniciativas y lo que "no haría" deben reflejar tu criterio: ajústalas) |
+| 10 | ✍️ | | |
 
 ## 3. Situaciones en las que la IA se equivocó o propuso algo riesgoso
 
